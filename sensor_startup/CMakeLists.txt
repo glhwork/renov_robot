@@ -32,26 +32,32 @@ link_directories(
   lib
 )
 
+# define the library used in sensor communication
 add_library(mobile_sensor
   src/MobileImu.cpp
   src/MobileMotor.cpp
 )
-target_link_libraries(mobile_imu
+target_link_libraries(mobile_sensor
+  usbcan
   ${catkin_LIBRARIES}
 )
 
+# define the imu node
 add_executable(imu_core
   src/imu_core.cpp
 )
 target_link_libraries(imu_core
   mobile_sensor
+  usbcan
   ${catkin_LIBRARIES}
 )
 
+# define the motor data node
 add_executable(motor_core
   src/motor_core.cpp
 )
 target_link_libraries(motor_core
   mobile_sensor
+  usbcan
   ${catkin_LIBRARIES} 
 )
