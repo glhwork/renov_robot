@@ -33,7 +33,7 @@ void MobileMotor::CanBusInit() {
   ss >> device_index;
   
   if (!VCI_OpenDevice(device_type, device_index, 0)) {
-    ROS_ERROR("open CAN failure");
+    ROS_ERROR("open CAN on ttyUSB-%d failure", device_index);
   } else {
     ROS_INFO("open CAN successfully");
   };

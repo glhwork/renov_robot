@@ -38,24 +38,24 @@ get : sudo apt-get install ros-[distro]-serial
 
 ### sensor_startup
 
-developing
+sensor drivers for applying or testing sensors
 
 ### mobile_base_slam
 
-developing
+launch slam node for base navigation
 
 ### mobile_base_navigation
 
-developing
+navigation scheme including environment perception
 
 ### mobile_base_description
 
-developing
+external paramters describing links of robot
 
 ### mobile_base_controller
 
-developing
+path tracking scheme
 
 ### mobile_base_teleop
 
-developing
+key-borad tele-operation of mobile base
