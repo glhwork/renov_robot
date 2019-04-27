@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   serial
 )
 
+find_package(Threads)
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -24,11 +25,16 @@ catkin_package(
 
 include_directories(
   include
+  lib
   ${catkin_INCLUDE_DIRS}
 )
+link_directories(
+  lib
+)
 
-add_library(mobile_imu
+add_library(mobile_sensor
   src/MobileImu.cpp
+  src/MobileMotor.cpp
 )
 target_link_libraries(mobile_imu
   ${catkin_LIBRARIES}
@@ -36,12 +42,16 @@ target_link_libraries(mobile_imu
 
 add_executable(imu_core
   src/imu_core.cpp
-  src/MobileImu.cpp
 )
 target_link_libraries(imu_core
-  mobile_imu
+  mobile_sensor
   ${catkin_LIBRARIES}
 )
 
-
-
+add_executable(motor_core
+  src/motor_core.cpp
+)
+target_link_libraries(motor_core
+  mobile_sensor
+  ${catkin_LIBRARIES} 
+)
