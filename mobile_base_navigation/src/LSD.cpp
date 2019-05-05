@@ -120,7 +120,7 @@
 /** Label for pixels already used in detection. */
 #define USED    1
 
-namespace lsd {
+namespace line {
 /*----------------------------------------------------------------------------*/
 /** Chained list of coordinates.
  */
