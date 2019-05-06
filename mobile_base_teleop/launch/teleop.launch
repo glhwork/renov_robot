@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="mobile_base_teleop" type="tele_operate" name="tele_operate" output="screen">
+    <param name="v_max" value="0.3"/>
+    <param name="av_max" value="0.17"/>
+  </node>  
+</launch>
