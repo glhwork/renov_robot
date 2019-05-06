@@ -19,10 +19,19 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
+add_library(teleop
+  src/Teleop.cpp
+)
 
+add_executable(tele_operate
+  src/tele_operate.cpp
+)
+target_link_libraries(tele_operate
+  teleop
+  ${catkin_LIBRARIES}
+)

@@ -2,6 +2,7 @@
 #include "mobile_base_navigation/LSD.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include <string>
+#include <fstream>
 
 void testCallback(const nav_msgs::OccupancyGrid& data) {
   line::image_double pixel_map = new line::image_double_s;
@@ -15,20 +16,28 @@ void testCallback(const nav_msgs::OccupancyGrid& data) {
     } else if (100 == data.data[i]) {
       pixel_map->data[i] = (double)data.data[i];
     } else {
-      pixel_map->data[i] = 50.0;
+      pixel_map->data[i] = 100.0;
     }
   }
   
-  std::cout << "11" << std::endl;
+  std::cout << "========" << std::endl;
   line::ntuple_list list = new line::ntuple_list_s;
   list = line::lsd(pixel_map);
-  
-  std::cout << list->dim << std::endl << list->max_size << std::endl << list->size << std::endl;
-  delete [] pixel_map->data;
+
+  std::ofstream out;
+  out.open("/home/glh/Desktop/line.txt");
+  for (size_t i = 0; i < list->size; i++) {
+    for (size_t j = 0; j < list->dim; j++) {
+      out << list->values[j + i * list->dim] << "  ";
+    }
+    out << std::endl;
+  }
+  out.close();
+  delete[] pixel_map->data;
   delete pixel_map;
   delete list;
   // std::cout << sizeof(list->values)/sizeof(double) << std::endl;
-  std::cout << "22" << std::endl;
+  std::cout << "========" << std::endl;
 
 }
 
