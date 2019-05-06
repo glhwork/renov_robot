@@ -15,14 +15,9 @@ Teleop::Teleop() {
     av_max = 0.174;
   }
   velo_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 100);
-  std::cout << "finish construction" << std::endl;
 }
 
 Teleop::~Teleop() {
-  geometry_msgs::Twist twist;
-  twist.linear.x = twist.linear.y = twist.linear.z = 0.0;
-  twist.angular.x = twist.angular.y = twist.angular.z = 0.0;
-  std::cout << "brake in destruciton!" << std::endl;
 }
 
 void Teleop::GetKey() {
@@ -37,8 +32,6 @@ void Teleop::GetKey() {
   new_settings.c_cc[VMIN] = 1;
   tcsetattr(0, TCSANOW, &new_settings);
 
-  std::cout << "start get key" << std::endl;
-
   key_value = getchar();
   PubVelocity(key_value);
   
@@ -51,12 +44,12 @@ void Teleop::PubVelocity(int key_value) {
     switch (key_value) {
       case 'q': {
         mode = FORWARD;
-        std::cout << "FORWARD MODE" << std::endl;
+        std::cout << "  --  FORWARD MODE" << std::endl;
         break;
       }
       case 'e': {
         mode = ROTATE;
-        std::cout << "ROTATE MODE" << std::endl;
+        std::cout << "  --  ROTATE MODE" << std::endl;
         break;
       }
       default: break;
@@ -68,10 +61,10 @@ void Teleop::PubVelocity(int key_value) {
       case 'w': {
         v += 0.01;
         if (v >= 0) {
-          std::cout << "moving forward at linear speed : " << v << "m/s"
+          std::cout << "  --  moving forward at linear speed : " << v << "m/s"
                     << std::endl;
         } else {
-          std::cout << "moving backward at linear speed : " << v << "m/s"
+          std::cout << "  --  moving backward at linear speed : " << v << "m/s"
                     << std::endl;
         }
         break;
@@ -79,21 +72,22 @@ void Teleop::PubVelocity(int key_value) {
       case 'x': {
         v -= 0.01;
         if (v >= 0) {
-          std::cout << "moving forward at linear speed : " << v << "m/s"
+          std::cout << "  --  moving forward at linear speed : " << v << "m/s"
                     << std::endl;
         } else {
-          std::cout << "moving backward at linear speed : " << v << "m/s"
+          std::cout << "  --  moving backward at linear speed : " << v << "m/s"
                     << std::endl;
         }
         break;
       }
       case 's': {
         v = 0.0;
-        std::cout << "brake !!!!" << std::endl;
+        std::cout << "  --  brake !!!!" << std::endl;
         break;
       }
       default: {
-        std::cout << "incorrect commands at " << mode << " mode" << std::endl;
+        std::cout << "  --  incorrect commands at " << mode << " mode" 
+                  << std::endl;
         break;
       }
     }
@@ -111,10 +105,10 @@ void Teleop::PubVelocity(int key_value) {
       case 'a': {
         av += 0.017;
         if (av >= 0) {
-          std::cout << "rotating anti-clockwise at angular speed : " << av
+          std::cout << "  --  rotating anti-clockwise at angular speed : " << av
                     << " rad/s" << std::endl;
         } else {
-          std::cout << "rotating clockwise at angular speed : " << av
+          std::cout << "  --  rotating clockwise at angular speed : " << av
                     << " rad/s " << std::endl;
         }
         break;
@@ -122,21 +116,22 @@ void Teleop::PubVelocity(int key_value) {
       case 'd': {
         av -= 0.017;
         if (av >= 0) {
-          std::cout << "rotating anti-clockwise at angular speed : " << av
+          std::cout << "  --  rotating anti-clockwise at angular speed : " << av
                     << " rad/s" << std::endl;
         } else {
-          std::cout << "rotating clockwise at angular speed : " << av
+          std::cout << "  --  rotating clockwise at angular speed : " << av
                     << " rad/s" << std::endl;
         }
         break;
       }
       case 's': {
         av = 0.0;
-        std::cout << "brake !!!!" << std::endl;
+        std::cout << "  --  brake !!!!" << std::endl;
         break;
       }
       default: {
-        std::cout << "incorrect commands at " << mode << " mode" << std::endl;
+        std::cout << "  --  incorrect commands at " << mode << " mode" 
+                  << std::endl;
         break;
       }
     }
@@ -149,6 +144,11 @@ void Teleop::PubVelocity(int key_value) {
     velo_pub.publish(twist);
   }  // mechanism of rotate mode
   if ('p' == key_value) {
+    geometry_msgs::Twist twist;
+    twist.linear.x = twist.linear.y = twist.linear.z = 0.0;
+    twist.angular.x = twist.angular.y = twist.angular.z = 0.0;
+    velo_pub.publish(twist);
+    std::cout << "  --  force stop before exit" << std::endl;
     exit(1);
   }
 }
