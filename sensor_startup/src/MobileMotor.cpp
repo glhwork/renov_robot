@@ -12,7 +12,7 @@ MobileMotor::MobileMotor() {
 void MobileMotor::ParamInit() {
 
   if (!n_private.getParam("port", port)) {
-    port = "/dev/ttyUISB0";
+    port = "/dev/ttyUSB0";
   }
   if (!n_private.getParam("state_topic", state_topic)) {
     state_topic = "motor_state";

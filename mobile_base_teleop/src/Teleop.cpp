@@ -100,6 +100,7 @@ void Teleop::PubVelocity(int key_value) {
     velo_pub.publish(twist);
     
   }  // mechanism of forward mode
+  
   if (ROTATE == mode) {
     switch (key_value) {
       case 'a': {

@@ -8,7 +8,6 @@ int main(int argc, char** argv) {
   ros::Rate r(10);
 
   Teleop tele;
-  std::cout << "get class" << std::endl;
   while (ros::ok()) {
     tele.GetKey();
     ros::spinOnce();
