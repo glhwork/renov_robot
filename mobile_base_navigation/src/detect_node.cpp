@@ -33,7 +33,7 @@ void testCallback(const nav_msgs::OccupancyGrid& data) {
     out << std::endl;
   }
   out.close();
-  delete[] pixel_map->data;
+  delete [] pixel_map->data;
   delete pixel_map;
   delete list;
   // std::cout << sizeof(list->values)/sizeof(double) << std::endl;

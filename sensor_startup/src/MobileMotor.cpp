@@ -4,6 +4,7 @@ using mobile::MobileMotor;
 
 MobileMotor::MobileMotor() {
   n_private = ros::NodeHandle("motor_core");
+  device_index = 1;  // this can device only has one can channel
   ParamInit();
   Setup();
   CanBusInit();
@@ -20,7 +21,12 @@ void MobileMotor::ParamInit() {
   if (!n_private.getParam("device_type", device_type)) {
     device_type = 3;
   }
-
+  if (!n_private.getParam("steering_mode", steering_mode)) {
+    steering_mode = 0;
+  }
+  if (!n_private.getParam("walking_mode", walking_mode)) {
+    walking_mode = 1;
+  }
 }
 
 void MobileMotor::Setup() {
@@ -28,9 +34,9 @@ void MobileMotor::Setup() {
 }
 
 void MobileMotor::CanBusInit() {
-  std::stringstream ss;
-  ss << port.back();
-  ss >> device_index;
+  // std::stringstream ss;
+  // ss << port.back();
+  // ss >> device_index;
   
   if (!VCI_OpenDevice(device_type, device_index, 0)) {
     ROS_ERROR("open CAN on ttyUSB-%d failure", device_index);
@@ -53,3 +59,6 @@ void MobileMotor::CanBusInit() {
   }
 }
 
+void MobileMotor::SetMode() {
+
+}

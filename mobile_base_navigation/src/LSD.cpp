@@ -2126,4 +2126,4 @@ void lsdGet(double* src, int rows, int cols, char* file) {
     free_ntuple_list(ntl);
 }
 
-} // namespace lsd
+} // namespace line
