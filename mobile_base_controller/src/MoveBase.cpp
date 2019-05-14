@@ -119,7 +119,7 @@ void MoveBase::Hoffman(const Pose2d& pose) {
   delta.push_back(-delta[1]);
 
   sensor_msgs::JointState cmd;
-  cmd.header.frame_id = map_frame_id;
+  cmd.header.frame_id = base_frame_id;
   cmd.header.stamp = ros::Time::now();
 
   for (size_t i = 0; i < delta.size(); i++) {

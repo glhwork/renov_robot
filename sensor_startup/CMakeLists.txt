@@ -61,3 +61,11 @@ target_link_libraries(motor_core
   usbcan
   ${catkin_LIBRARIES} 
 )
+
+add_executable(test_node
+  src/test.cpp
+)
+target_link_libraries(test_node
+  usbcan
+  ${catkin_LIBRARIES}
+)
