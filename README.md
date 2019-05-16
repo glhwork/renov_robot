@@ -39,6 +39,7 @@ get : sudo apt-get install ros-[distro]-serial
 ### sensor_startup
 
 sensor drivers for applying or testing sensors
+  - For motor driver with CANOpen protocol based on CAN analyst, reinstall the driver of CH340
 
 ### mobile_base_slam
 

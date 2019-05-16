@@ -76,7 +76,7 @@
 #define CHAR char
 #define UCHAR unsigned char
 #define UINT unsigned int
-#define DWORD unsigned int
+#define DWORD unsigned int  
 #define PVOID void*
 #define ULONG unsigned int
 #define INT int
