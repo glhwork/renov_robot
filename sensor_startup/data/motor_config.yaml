@@ -1,0 +1,18 @@
+devide_type: 3
+device_index: 1
+can_index: 0
+
+steering_mode: 0 
+walking_mode: 1
+
+encoder_lines: 2500
+
+walking_channel:
+  chn1: 1  # front walking wheels
+  chn2: 2  # rear walking wheels
+
+steering_channel:
+  chn1: 3  # front steering wheels
+  chn2: 4  # rear steering wheels
+
+

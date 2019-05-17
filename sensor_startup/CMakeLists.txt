@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Threads)
+find_package(yaml-cpp REQUIRED)
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -38,6 +39,7 @@ add_library(mobile_sensor
   src/MobileMotor.cpp
 )
 target_link_libraries(mobile_sensor
+  yaml-cpp
   usbcan
   ${catkin_LIBRARIES}
 )
@@ -58,6 +60,7 @@ add_executable(motor_core
 )
 target_link_libraries(motor_core
   mobile_sensor
+  yaml-cpp
   usbcan
   ${catkin_LIBRARIES} 
 )

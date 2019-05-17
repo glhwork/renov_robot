@@ -73,8 +73,7 @@ int main() {
     can[i].Data[5] = 0x00;
   }
   can[1].Data[4] = 0x06;
-  can[2].Data[4] = 0x07;
-  can[3].Data[4] = 0x0f;
+  can[2].Data[4] = 0x07;  can[3].Data[4] = 0x0f;
   
 
   command.DataLen = 8;
@@ -101,11 +100,63 @@ int main() {
   while(1) {
     t = time(&t);
     // std::cout << 1 << " ";
-    if (abs(t - t_pre) > 0.5) {
+    if (abs(t - t_pre) > 5) {
+      t_pre = t;
       break;
     }
   }
   std::cout << std::endl;
+
+  command.DataLen = 8;
+  command.Data[0] = 0x23;
+  command.Data[1] = 0xff;
+  command.Data[2] = 0x68;
+  command.Data[3] = 0x00;
+  command.Data[4] = 0xb8;
+  command.Data[5] = 0x0b;
+  command.Data[6] = 0x00;
+  command.Data[7] = 0x00;
+  std::cout << "command quantity : "
+            << VCI_Transmit(dev_type, dev_ind, can_ind, &command, 1)
+            << std::endl;
+  std::cout << "command quantity : "
+            << VCI_Transmit(dev_type, dev_ind, can_ind, &command, 1)
+            << std::endl;
+
+  while (1) {
+    t = time(&t);
+    // std::cout << 1 << " ";
+    if (abs(t - t_pre) > 2) {
+      t_pre = t;
+      break;
+    }
+  }
+
+  command.DataLen = 8;
+  command.Data[0] = 0x23;
+  command.Data[1] = 0xff;
+  command.Data[2] = 0x68;
+  command.Data[3] = 0x00;
+  command.Data[4] = 0x00;
+  command.Data[5] = 0x00;
+  command.Data[6] = 0x00;
+  command.Data[7] = 0x00;
+  std::cout << "command quantity : "
+            << VCI_Transmit(dev_type, dev_ind, can_ind, &command, 1)
+            << std::endl;
+  std::cout << "command quantity : "
+            << VCI_Transmit(dev_type, dev_ind, can_ind, &command, 1)
+            << std::endl;
+
+  while (1) {
+    t = time(&t);
+    // std::cout << 1 << " ";
+    if (abs(t - t_pre) > 0.01) {
+      t_pre = t;
+      break;
+    }
+  }
+
   if (!VCI_CloseDevice(dev_type, dev_ind)) {
     std::cout << "close device failure" << std::endl;
   } else {
