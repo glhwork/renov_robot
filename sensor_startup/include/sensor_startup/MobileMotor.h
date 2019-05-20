@@ -10,6 +10,7 @@
 
 #include "ros/ros.h"
 #include "sensor_msgs/JointState.h"
+#include "geometry_msgs/Twist.h"
 #include "serial/serial.h"
 
 #include "CanAssist.h"
@@ -25,7 +26,6 @@ struct IdConfig {
   int steer_chn2;
 };
 
-
 class MobileMotor {
  public:
   MobileMotor();
@@ -33,16 +33,23 @@ class MobileMotor {
   void ParamInit();
   void ReadFile(const std::string& address);
   void Setup();
-  void CanBusInit();
-  void SetMode();
+  bool CanBusInit();
+  bool SetMode();
+  bool EnableMotor();
+  void DataTransform(BYTE* data, uint8_t* cmd, const uint& len);
 
-  VCI_CAN_OBJ* MobileMotor::GetVciObject(const int& obj_num, const int& chn);
+  VCI_CAN_OBJ* MobileMotor::GetVciObject(const int& obj_num);
   void IdCheck();
+  uint SendCommand(PVCI_CAN_OBJ obj, uint len);
 
- private:
-  
+  void ControlCallback(const sensor_msgs::JointState& joint_state);
+  void TeleopCallback(const geometry_msgs::Twist& twist);
+  void FeedbackCallback(const ros::Timer&);
+
+  private :
+
   /* PARAMETERS */
-  // port connected with CAN-USB converter 
+  // port connected with CAN-USB converter
   std::string port;
   // topic used to publish joint states
   std::string state_topic;
@@ -58,6 +65,8 @@ class MobileMotor {
   // device type of CAN-Analyst, refer to controlcan.h
   int device_type;
   int can_index;
+  // id_num means the quantity of motor-drivers we use
+  int id_num;
 
   // working mode of motors:
   // 0 -> position servo
@@ -65,9 +74,11 @@ class MobileMotor {
   int steering_mode;
   int walking_mode;
 
-  unsigned int encoder_lines;
+  uint encoder_lines;
   // COBID of multiple motor drivers
   int cob_id[4];
+
+  Command cmd;
 
   bool if_initial;
 
