@@ -36,15 +36,17 @@ class MobileMotor {
   bool CanBusInit();
   bool SetMode();
   bool EnableMotor();
+  void ModeCommand(const int& id_0, const int& id_1, 
+                   const int& len, const uint8_t mode);
   void DataTransform(BYTE* data, uint8_t* cmd, const uint& len);
 
-  VCI_CAN_OBJ* MobileMotor::GetVciObject(const int& obj_num);
+  VCI_CAN_OBJ* GetVciObject(const int& obj_num);
   void IdCheck();
   uint SendCommand(PVCI_CAN_OBJ obj, uint len);
 
   void ControlCallback(const sensor_msgs::JointState& joint_state);
   void TeleopCallback(const geometry_msgs::Twist& twist);
-  void FeedbackCallback(const ros::Timer&);
+  void FeedbackCallback(const ros::TimerEvent&);
 
   private :
 
@@ -77,7 +79,7 @@ class MobileMotor {
   uint encoder_lines;
   // COBID of multiple motor drivers
   int cob_id[4];
-
+  // pre-defined commands as data arrays
   Command cmd;
 
   bool if_initial;

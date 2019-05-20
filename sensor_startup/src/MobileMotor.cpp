@@ -8,11 +8,7 @@ MobileMotor::MobileMotor() {
   ParamInit();
   ReadFile(file_address);
   Setup();
-  if (CanBusInit()) {
-    if_initial = true;
-  } else {
-    if_initial = false;
-  }
+  if_initial = CanBusInit();
 }
 
 void MobileMotor::ParamInit() {
@@ -59,7 +55,7 @@ void MobileMotor::Setup() {
 bool MobileMotor::CanBusInit() {
   
   if (!VCI_OpenDevice(device_type, device_index, 0)) {
-    ROS_ERROR("open CAN on ttyUSB-%d failure", device_index);
+    ROS_ERROR("open CAN on ttyUSB-%d failure", (int)device_index);
     return false;
   } else {
     ROS_INFO("open CAN successfully");
@@ -232,6 +228,43 @@ bool MobileMotor::SetMode() {
   return true;
 }
 
+void MobileMotor::ModeCommand(const int& id_0, const int& id_1, 
+                              const int& len, const uint8_t mode) {
+  int obj_num = 2;
+  PVCI_CAN_OBJ obj = GetVciObject(obj_num);
+
+  obj[0].ID = obj[0].ID + id_0;
+  obj[0].DataLen = len;
+  // DataTransform(obj[0].Data, cmd.SET_MODE_CURRENT, obj[0].DataLen);
+  obj[1].ID = obj[1].ID + id_1;
+  obj[1].DataLen = len;
+  // DataTransform(obj[1].Data, cmd.SET_MODE_CURRENT, obj[1].DataLen);
+  switch (mode) {
+    case POSITION_MODE: {
+      DataTransform(obj[0].Data, cmd.SET_MODE_POSITION, len);
+      DataTransform(obj[1].Data, cmd.SET_MODE_POSITION, len);
+      break;
+    }
+    case VELOCITY_MODE: {
+      DataTransform(obj[0].Data, cmd.SET_MODE_VELOCITY, len);
+      DataTransform(obj[1].Data, cmd.SET_MODE_VELOCITY, len);
+      break;
+    }
+    case CURRENT_MODE: {
+      DataTransform(obj[0].Data, cmd.SET_MODE_CURRENT, len);
+      DataTransform(obj[1].Data, cmd.SET_MODE_CURRENT, len);
+      break;
+    }
+    default:
+      break;
+  }
+
+  SendCommand(obj, obj_num);
+
+  delete[] obj;
+}
+
+
 bool MobileMotor::EnableMotor() {
   int ena_cmd_num = 3;
   PVCI_CAN_OBJ obj = GetVciObject(id_num*ena_cmd_num);
@@ -298,7 +331,7 @@ void MobileMotor::IdCheck() {
   for (size_t i = 0; i < n; i++) {
     for (size_t j = i+1; j < n; j++) {
       if (cob_id[i] == cob_id[i+1]) {
-        ROS_WARN("id-%d and id-%d are equal", i, j);
+        ROS_WARN("id-%d and id-%d are equal", (int)i, (int)j);
         flag = false;
         break;
       }
@@ -331,7 +364,7 @@ void MobileMotor::TeleopCallback(const geometry_msgs::Twist& twist) {
   }
 }
 
-void MobileMotor::FeedbackCallback(const ros::Timer&) {
+void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
   if (!if_initial) {
     ROS_WARN("feedback failure caused by initialization failure");
     return ;

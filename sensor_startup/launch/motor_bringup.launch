@@ -2,6 +2,8 @@
   <node pkg="sensor_startup" type="motor_core" name="motor_core">
     <param name="port" value="ttyUSB0"/>
     <param name="state_topic" value="motor_state"/>
+    <param name="file_address" 
+      value="/home/glh/renov_ws/src/renov_robot/sensor_startup/data/motor_config.yaml"/>
     <!-- <param name="device_type" value="3"/>
     <param name="steering_mode" value="0"/>
     <param name="walking_mode" value="1"/> -->

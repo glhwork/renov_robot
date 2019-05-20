@@ -15,7 +15,7 @@
 
 #define ERROR_CODE 0x80
 
-typedef unsigned char _u8;
+typedef uint8_t _u8;
 
 struct Command {
   _u8 ENABLE_COMMAND_1[6] = {0x2b, 0x40, 0x60, 0x00, 0x06, 0x00};
