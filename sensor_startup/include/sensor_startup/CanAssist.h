@@ -9,9 +9,13 @@
 #define VELOCITY_MODE 0x01
 #define CURRENT_MODE 0x02
 
-#define DATA_UINT8 0x4f
-#define DATA_UINT16 0x4b
-#define DATA_UINT32 0x43
+#define DATA_UINT8 0x2f
+#define DATA_UINT16 0x2b
+#define DATA_UINT32 0x23
+
+#define RETURN_UINT8 0x4f
+#define RETURN_UINT16 0x4b
+#define RETURN_UINT32 0x43
 
 #define ERROR_CODE 0x80
 

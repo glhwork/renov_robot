@@ -96,126 +96,28 @@ bool MobileMotor::CanBusInit() {
 
 }
 
-// bad encapisulation and reuse of codes of this function!!!
 bool MobileMotor::SetMode() {
   
-  // set mode of steering motors
-  switch (steering_mode) {
-    case POSITION_MODE: {
-      int obj_num = 2;
-      PVCI_CAN_OBJ obj = GetVciObject(obj_num);
-
-      obj[0].ID = obj[0].ID + cob_id[2];
-      obj[0].DataLen =
-          sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
-      DataTransform(obj[0].Data, cmd.SET_MODE_POSITION, obj[0].DataLen);
-      obj[1].ID = obj[1].ID + cob_id[3];
-      obj[1].DataLen =
-          sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
-      DataTransform(obj[1].Data, cmd.SET_MODE_POSITION, obj[1].DataLen);
-      SendCommand(obj, obj_num);
-
-      std::cout << "steering mode == position mode" << std::endl;
-      delete[] obj;
-      break;
-    }
-    case VELOCITY_MODE: {
-      int obj_num = 2;
-      PVCI_CAN_OBJ obj = GetVciObject(obj_num);
-
-      obj[0].ID = obj[0].ID + cob_id[2];
-      obj[0].DataLen =
-          sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
-      DataTransform(obj[0].Data, cmd.SET_MODE_VELOCITY, obj[0].DataLen);
-      obj[1].ID = obj[1].ID + cob_id[3];
-      obj[1].DataLen =
-          sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
-      DataTransform(obj[1].Data, cmd.SET_MODE_VELOCITY, obj[1].DataLen);
-      SendCommand(obj, obj_num);
-
-      std::cout << "steering mode == velocity mode" << std::endl;
-      delete[] obj;
-      break;
-    }  
-    case CURRENT_MODE: {
-      int obj_num = 2;
-      PVCI_CAN_OBJ obj = GetVciObject(obj_num);
-
-      obj[0].ID = obj[0].ID + cob_id[2];
-      obj[0].DataLen =
-          sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
-      DataTransform(obj[0].Data, cmd.SET_MODE_CURRENT, obj[0].DataLen);
-      obj[1].ID = obj[1].ID + cob_id[3];
-      obj[1].DataLen =
-          sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
-      DataTransform(obj[1].Data, cmd.SET_MODE_CURRENT, obj[1].DataLen);
-      SendCommand(obj, obj_num);
-
-      std::cout << "steering mode == current mode" << std::endl;
-      delete[] obj;
-      break;
-    }
-    default: {
-      ROS_WARN("Incorrect mode number of steering motors!!");
-      return false;
-      break;
-    }
-  }  // switch-case end of steering mode setting
-
   // set mode of walking motors
   switch (walking_mode) {
     case POSITION_MODE: {
-      int obj_num = 2;
-      PVCI_CAN_OBJ obj = GetVciObject(obj_num);
-
-      obj[0].ID = obj[0].ID + cob_id[0];
-      obj[0].DataLen =
+      int len =
           sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
-      DataTransform(obj[0].Data, cmd.SET_MODE_POSITION, obj[0].DataLen);
-      obj[1].ID = obj[1].ID + cob_id[1];
-      obj[1].DataLen =
-          sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
-      DataTransform(obj[1].Data, cmd.SET_MODE_POSITION, obj[1].DataLen);
-      SendCommand(obj, obj_num);
-
+      ModeCommand(cob_id[0], cob_id[1], len, POSITION_MODE);
       std::cout << "walking mode == position mode" << std::endl;
-      delete[] obj;
       break;
     }
     case VELOCITY_MODE: {
-      int obj_num = 2;
-      PVCI_CAN_OBJ obj = GetVciObject(obj_num);
-
-      obj[0].ID = obj[0].ID + cob_id[0];
-      obj[0].DataLen =
+      int len =
           sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
-      DataTransform(obj[0].Data, cmd.SET_MODE_VELOCITY, obj[0].DataLen);
-      obj[1].ID = obj[1].ID + cob_id[1];
-      obj[1].DataLen =
-          sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
-      DataTransform(obj[1].Data, cmd.SET_MODE_VELOCITY, obj[1].DataLen);
-      SendCommand(obj, obj_num);
-
+      ModeCommand(cob_id[0], cob_id[1], len, VELOCITY_MODE);
       std::cout << "walking mode == velocity mode" << std::endl;
-      delete[] obj;
       break;
     }
     case CURRENT_MODE: {
-      int obj_num = 2;
-      PVCI_CAN_OBJ obj = GetVciObject(obj_num);
-
-      obj[0].ID = obj[0].ID + cob_id[0];
-      obj[0].DataLen =
-          sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
-      DataTransform(obj[0].Data, cmd.SET_MODE_CURRENT, obj[0].DataLen);
-      obj[1].ID = obj[1].ID + cob_id[1];
-      obj[1].DataLen =
-          sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
-      DataTransform(obj[1].Data, cmd.SET_MODE_CURRENT, obj[1].DataLen);
-      SendCommand(obj, obj_num);
-
+      int len = sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
+      ModeCommand(cob_id[0], cob_id[1], len, CURRENT_MODE);
       std::cout << "walking mode == current mode" << std::endl;
-      delete[] obj;
       break;
     }
     default: {
@@ -225,38 +127,69 @@ bool MobileMotor::SetMode() {
     }
   }  // switch-case end of walking motor setting
 
+  // set mode of steering motors
+  switch (steering_mode) {
+    case POSITION_MODE: {
+      int len =
+          sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
+      ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
+      std::cout << "steering mode == position mode" << std::endl;
+      break;
+    }
+    case VELOCITY_MODE: {
+      int len =
+          sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
+      ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
+      std::cout << "steering mode == velocity mode" << std::endl;
+      break;
+    }  
+    case CURRENT_MODE: {
+      int len =
+          sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
+      ModeCommand(cob_id[2], cob_id[3], len, CURRENT_MODE);
+      std::cout << "steering mode == current mode" << std::endl;
+      break;
+    }
+    default: {
+      ROS_WARN("Incorrect mode number of steering motors!!");
+      return false;
+      break;
+    }
+  }  // switch-case end of steering motor setting
+
   return true;
 }
 
 void MobileMotor::ModeCommand(const int& id_0, const int& id_1, 
-                              const int& len, const uint8_t mode) {
+                              const int& len, const uint8_t& mode) {
   int obj_num = 2;
   PVCI_CAN_OBJ obj = GetVciObject(obj_num);
 
   obj[0].ID = obj[0].ID + id_0;
   obj[0].DataLen = len;
-  // DataTransform(obj[0].Data, cmd.SET_MODE_CURRENT, obj[0].DataLen);
+  // DataInitial(obj[0].Data, cmd.SET_MODE_CURRENT, obj[0].DataLen);
   obj[1].ID = obj[1].ID + id_1;
   obj[1].DataLen = len;
-  // DataTransform(obj[1].Data, cmd.SET_MODE_CURRENT, obj[1].DataLen);
+  // DataInitial(obj[1].Data, cmd.SET_MODE_CURRENT, obj[1].DataLen);
   switch (mode) {
     case POSITION_MODE: {
-      DataTransform(obj[0].Data, cmd.SET_MODE_POSITION, len);
-      DataTransform(obj[1].Data, cmd.SET_MODE_POSITION, len);
+      DataInitial(obj[0].Data, cmd.SET_MODE_POSITION, len);
+      DataInitial(obj[1].Data, cmd.SET_MODE_POSITION, len);
       break;
     }
     case VELOCITY_MODE: {
-      DataTransform(obj[0].Data, cmd.SET_MODE_VELOCITY, len);
-      DataTransform(obj[1].Data, cmd.SET_MODE_VELOCITY, len);
+      DataInitial(obj[0].Data, cmd.SET_MODE_VELOCITY, len);
+      DataInitial(obj[1].Data, cmd.SET_MODE_VELOCITY, len);
       break;
     }
     case CURRENT_MODE: {
-      DataTransform(obj[0].Data, cmd.SET_MODE_CURRENT, len);
-      DataTransform(obj[1].Data, cmd.SET_MODE_CURRENT, len);
+      DataInitial(obj[0].Data, cmd.SET_MODE_CURRENT, len);
+      DataInitial(obj[1].Data, cmd.SET_MODE_CURRENT, len);
       break;
     }
-    default:
+    default: {
       break;
+    }
   }
 
   SendCommand(obj, obj_num);
@@ -274,21 +207,21 @@ bool MobileMotor::EnableMotor() {
     obj[i*3].ID = obj[i].ID + i + 1;
     obj[i * 3].DataLen =
         sizeof(cmd.ENABLE_COMMAND_1) / sizeof(cmd.ENABLE_COMMAND_1[0]);
-    DataTransform(obj[i * 3].Data, 
-                  cmd.ENABLE_COMMAND_1, 
-                  obj[i * 3].DataLen);
+    DataInitial(obj[i * 3].Data, 
+                cmd.ENABLE_COMMAND_1, 
+                obj[i * 3].DataLen);
     obj[i*3 + 1].ID = obj[i*3 + 1].ID + i + 1;
     obj[i * 3 + 1].DataLen =
         sizeof(cmd.ENABLE_COMMAND_2) / sizeof(cmd.ENABLE_COMMAND_2[0]);
-    DataTransform(obj[i * 3 + 1].Data, 
-                  cmd.ENABLE_COMMAND_2,
-                  obj[i * 3 + 1].DataLen);
+    DataInitial(obj[i * 3 + 1].Data, 
+                cmd.ENABLE_COMMAND_2,
+                obj[i * 3 + 1].DataLen);
     obj[i*3 + 2].ID = obj[i*3 + 2].ID + i + 1;
     obj[i * 3 + 2].DataLen =
         sizeof(cmd.ENABLE_COMMAND_3) / sizeof(cmd.ENABLE_COMMAND_3[0]);
-    DataTransform(obj[i * 3 + 2].Data, 
-                  cmd.ENABLE_COMMAND_3,
-                  obj[i * 3 + 2].DataLen);
+    DataInitial(obj[i * 3 + 2].Data, 
+                cmd.ENABLE_COMMAND_3,
+                obj[i * 3 + 2].DataLen);
   }
   if (!SendCommand(obj, id_num*ena_cmd_num)) {
     return false;
@@ -298,7 +231,7 @@ bool MobileMotor::EnableMotor() {
   delete [] obj;
 }
 
-void MobileMotor::DataTransform(BYTE* data, uint8_t* cmd, const uint& len) {
+void MobileMotor::DataInitial(BYTE* data, uint8_t* cmd, const uint& len) {
   int n = sizeof(cmd) / sizeof(cmd[0]);
   std::cout << "get data : ";
   for (size_t i = 0; i < n; i++) {
@@ -346,8 +279,10 @@ void MobileMotor::IdCheck() {
 
 }
 
-uint MobileMotor::SendCommand(PVCI_CAN_OBJ obj, uint len) {
+uint MobileMotor::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
+
   return VCI_Transmit(device_type, device_index, can_index, obj, len);
+
 }
 
 void MobileMotor::ControlCallback(const sensor_msgs::JointState& joint_state) {
@@ -355,6 +290,126 @@ void MobileMotor::ControlCallback(const sensor_msgs::JointState& joint_state) {
     ROS_WARN("control failure caused by initialization failure");
     return ;
   }
+  
+  if (joint_state.velocity.size() < 4) {
+    ROS_WARN("Incorrect quantity of velocity commands");
+    return ;
+  }
+
+  // 0->left, 1->right for walking driver1 front
+  // 2->left, 3->right for walking driver2 rear
+  // 4->left, 5->right for steering driver1 front
+  // 6->left. 7->right for steering driver 2 rear
+  PVCI_CAN_OBJ obj = new VCI_CAN_OBJ[8];
+  
+  switch (walking_mode) {
+    case POSITION_MODE: {
+      std::cout << "position mode for walking is under developing" << std::endl;
+      break;
+    }
+    case VELOCITY_MODE: {
+      obj[0].ID += cob_id[0];
+      obj[1].ID += cob_id[0];
+
+      obj[2].ID += cob_id[1];
+      obj[3].ID += cob_id[1];
+
+      int len = 
+          sizeof(cmd.BASE_VELOCITY_COMMAND) / sizeof(cmd.BASE_VELOCITY_COMMAND);
+      obj[0].DataLen = 
+      obj[1].DataLen = 
+      obj[2].DataLen = 
+      obj[3].DataLen = len;
+
+      DataTransform(obj[0].Data, cmd.BASE_VELOCITY_COMMAND, len, 0x60,
+                    joint_state.velocity[0]);
+      DataTransform(obj[1].Data, cmd.BASE_VELOCITY_COMMAND, len, 0x68,
+                    joint_state.velocity[1]);
+      DataTransform(obj[2].Data, cmd.BASE_VELOCITY_COMMAND, len, 0x60,
+                    joint_state.velocity[2]);
+      DataTransform(obj[3].Data, cmd.BASE_VELOCITY_COMMAND, len, 0x68,
+                    joint_state.velocity[3]);
+      break;
+    }
+    case CURRENT_MODE: {
+      std::cout << "current mode for walking is under developing" << std::endl;
+      break;
+    }
+
+    switch (steering_mode) {
+      case POSITION_MODE: {
+      
+        break;
+      }
+      case VELOCITY_MODE: {
+        std::cout << "velocity mode for steering is under developing" 
+                  << std::endl;
+        break;
+      }
+      case CURRENT_MODE: {
+        std::cout << "current mode for steering is under developing" << std::endl;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  delete [] obj;
+}
+
+void MobileMotor::DataTransform(BYTE* data, uint8_t* cmd, const uint& len, 
+                                const uint8_t& index, const float& velo) {
+  DataInitial(data, cmd, len);
+  data[2] = index;
+
+  int n;
+  switch (cmd[0]) {
+    case DATA_UINT8: {
+      n = 1;
+      break;
+    }
+    case DATA_UINT16: {
+      n = 2;
+      break;
+    }
+    case DATA_UINT32: {
+      n = 4;
+      break;
+    }
+    default: {
+      ROS_WARN("wrong data type");
+      break;
+    }
+  }
+  for (size_t i = 0; i < n; i++) {
+    data[i + 4] = (((int)velo >> (i * 8)) & 0xff);
+  }
+
 }
 
 void MobileMotor::TeleopCallback(const geometry_msgs::Twist& twist) {

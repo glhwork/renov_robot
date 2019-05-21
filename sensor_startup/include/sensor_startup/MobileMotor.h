@@ -37,14 +37,17 @@ class MobileMotor {
   bool SetMode();
   bool EnableMotor();
   void ModeCommand(const int& id_0, const int& id_1, 
-                   const int& len, const uint8_t mode);
-  void DataTransform(BYTE* data, uint8_t* cmd, const uint& len);
+                   const int& len, const uint8_t& mode);
+  void DataInitial(BYTE* data, uint8_t* cmd, const uint& len);
 
   VCI_CAN_OBJ* GetVciObject(const int& obj_num);
   void IdCheck();
-  uint SendCommand(PVCI_CAN_OBJ obj, uint len);
+  uint SendCommand(PVCI_CAN_OBJ obj, const uint& len);
 
   void ControlCallback(const sensor_msgs::JointState& joint_state);
+  void DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
+                     const uint8_t& index, const float& velo);
+
   void TeleopCallback(const geometry_msgs::Twist& twist);
   void FeedbackCallback(const ros::TimerEvent&);
 
