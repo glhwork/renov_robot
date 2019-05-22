@@ -11,6 +11,14 @@ MobileMotor::MobileMotor() {
   if_initial = CanBusInit();
 }
 
+MobileMotor::~MobileMotor() {
+  if (!VCI_CloseDevice(device_type, device_index)) {
+    ROS_WARN("close device failure");
+  } else {
+    ROS_INFO("close device success");
+  }
+}
+
 void MobileMotor::ParamInit() {
 
   if (!n_private.getParam("port", port)) {
@@ -321,19 +329,22 @@ void MobileMotor::ControlCallback(const sensor_msgs::JointState& joint_state) {
       obj[2].DataLen = 
       obj[3].DataLen = len;
 
-      DataTransform(obj[0].Data, cmd.BASE_VELOCITY_COMMAND, len, 0x60,
+      DataTransform(obj[0].Data, cmd.BASE_VELOCITY_COMMAND, len, LEFT_MOTOR,
                     joint_state.velocity[0]);
-      DataTransform(obj[1].Data, cmd.BASE_VELOCITY_COMMAND, len, 0x68,
+      DataTransform(obj[1].Data, cmd.BASE_VELOCITY_COMMAND, len, RIGHT_MOTOR,
                     joint_state.velocity[1]);
-      DataTransform(obj[2].Data, cmd.BASE_VELOCITY_COMMAND, len, 0x60,
+      DataTransform(obj[2].Data, cmd.BASE_VELOCITY_COMMAND, len, LEFT_MOTOR,
                     joint_state.velocity[2]);
-      DataTransform(obj[3].Data, cmd.BASE_VELOCITY_COMMAND, len, 0x68,
+      DataTransform(obj[3].Data, cmd.BASE_VELOCITY_COMMAND, len, RIGHT_MOTOR,
                     joint_state.velocity[3]);
       break;
     }
     case CURRENT_MODE: {
       std::cout << "current mode for walking is under developing" << std::endl;
       break;
+    }
+    default: {
+      break;  // break or return ???
     }
 
     switch (steering_mode) {
@@ -351,33 +362,11 @@ void MobileMotor::ControlCallback(const sensor_msgs::JointState& joint_state) {
         break;
       }
       default: {
-        break;
+        break;  // break or return ???
       }
     }
 
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   delete [] obj;
 }
@@ -403,7 +392,7 @@ void MobileMotor::DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
     }
     default: {
       ROS_WARN("wrong data type");
-      break;
+      break;  // break or return ???
     }
   }
   for (size_t i = 0; i < n; i++) {
@@ -425,3 +414,4 @@ void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
     return ;
   }
 }
+

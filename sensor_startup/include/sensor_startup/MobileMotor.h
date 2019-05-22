@@ -29,7 +29,7 @@ struct IdConfig {
 class MobileMotor {
  public:
   MobileMotor();
-  virtual ~MobileMotor() {}
+  virtual ~MobileMotor();
   void ParamInit();
   void ReadFile(const std::string& address);
   void Setup();
@@ -51,7 +51,7 @@ class MobileMotor {
   void TeleopCallback(const geometry_msgs::Twist& twist);
   void FeedbackCallback(const ros::TimerEvent&);
 
-  private :
+ private:
 
   /* PARAMETERS */
   // port connected with CAN-USB converter
