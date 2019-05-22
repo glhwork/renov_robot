@@ -34,6 +34,12 @@ get : sudo apt-get install ros-[distro]-robot-pose-ekf
 
 get : sudo apt-get install ros-[distro]-serial
 
+### imu_tools
+
+document : <http://wiki.ros.org/imu_tools>
+
+clone from git : <https://github.com/ccny-ros-pkg/imu_tools/tree/kinetic>
+
 ## Pkgs && Nodes
 
 ### sensor_startup
