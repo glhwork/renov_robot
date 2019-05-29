@@ -35,3 +35,10 @@ target_link_libraries(tele_operate
   teleop
   ${catkin_LIBRARIES}
 )
+
+add_executable(teleop_gyj
+  src/teleop_gyj.cpp
+)
+target_link_libraries(teleop_gyj
+  ${catkin_LIBRARIES}
+)

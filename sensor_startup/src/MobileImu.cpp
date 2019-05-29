@@ -4,10 +4,15 @@ using mobile::MobileImu;
 
 MobileImu::MobileImu() {
 
-  n_private = ros::NodeHandle("imu_core");
+  n_private = ros::NodeHandle("imu");
   ParamInit();
   SerialInit();
   Setup();
+
+  std::cout << port_id << std::endl;
+  std::cout << baud_rate << std::endl;
+  std::cout << imu_frame_id << std::endl;
+  std::cout << imu_pub_topic << std::endl;
 
 }
 
@@ -66,7 +71,7 @@ void MobileImu::ParamInit() {
 }
 
 void MobileImu::Setup() {
-  imu_pub = nh.advertise<sensor_msgs::Imu>(imu_pub_topic, 100);
+  imu_pub = n_private.advertise<sensor_msgs::Imu>(imu_pub_topic, 100);
 }
 
 void MobileImu::ReadData() {
@@ -122,8 +127,8 @@ void MobileImu::DataParser(const std::vector<uint8_t>& data) {
     imu_msg.linear_acceleration.y = vec(4);
     imu_msg.linear_acceleration.z = vec(5);
 
-    printf("angular -> roll: %.2f, pitch: %.2f, yaw: %.2f \n", vec(0), vec(1), vec(2));
-    printf("quaternion -> x: %.2f, y: %.2f, z: %.2f, w: %.2f \n", q.x(), q.y(), q.z(), q.w());
+    // printf("angular -> roll: %.2f, pitch: %.2f, yaw: %.2f \n", vec(0), vec(1), vec(2));
+    // printf("quaternion -> x: %.2f, y: %.2f, z: %.2f, w: %.2f \n", q.x(), q.y(), q.z(), q.w());
     // ROS_INFO("Data : \n angular velocity [x: %.2f, y: %.2f, z: %.2f]\n linear acc [x: %.2f, y: %.2f, z: %.2f]\n orientation [roll: %.2f, pitch: %.2f, yaw: %.2f]",
     //          vec(6), vec(7), vec(8), vec(3), vec(4), vec(5), vec(0), vec(1), vec(2));
 

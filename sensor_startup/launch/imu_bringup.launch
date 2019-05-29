@@ -1,9 +1,23 @@
 <launch>
-  <param name="imu_pub_rate" value="10"/>
-  <node pkg="sensor_startup" type="imu_core" name="imu_core" output="screen">
+  <param name="imu_pub_rate" value="100"/>
+  <node pkg="sensor_startup" type="imu_core" name="imu" output="screen">
     <param name="port_id" value="/dev/ttyUSB0" />
     <param name="baud_rate" value="115200" />
     <param name="imu_frame_id" value="base_imu"/>
-    <param name="imu_pub_topic" value="imu"/>
+    <param name="imu_pub_topic" value="data_raw"/>
   </node>
+
+<!--  <node pkg="imu_complementary_filter" type="complementary_filter_node" name="complementary_filter_gain_node" output="screen">
+    <param name="do_bias_estimation" value="true"/>
+    <param name="do_adaptive_gain" value="true"/>
+    <param name="use_mag" value="false"/>
+    <param name="gain_acc" value="0.01"/>
+    <param name="gain_mag" value="0.01"/>
+  </node>
+  -->
+
+<!--  <node pkg="imu_filter_madgwick" type="imu_filter_node" name="ImuFilter" output="screen">
+    <param name="use_mag" value="false"/>
+  </node> 
+ --> 
 </launch>
