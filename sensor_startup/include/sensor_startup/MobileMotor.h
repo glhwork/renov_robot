@@ -50,6 +50,13 @@ class MobileMotor {
 
   void TeleopCallback(const geometry_msgs::Twist& twist);
   void FeedbackCallback(const ros::TimerEvent&);
+  void ControlMotor(const std::vector<float>& velocity);
+
+ protected:
+  // COBID of multiple motor drivers
+  int cob_id[4];
+  // pre-defined commands as data arrays
+  Command cmd;
 
  private:
 
@@ -80,10 +87,8 @@ class MobileMotor {
   int walking_mode;
 
   uint encoder_lines;
-  // COBID of multiple motor drivers
-  int cob_id[4];
-  // pre-defined commands as data arrays
-  Command cmd;
+  
+  
 
   bool if_initial;
 

@@ -17,3 +17,14 @@ steering_channel:
   chn2: 4  # rear steering wheels
 
 
+motor_sign:
+  fwl: 0  # front walking left
+  fwr: 0  # front walking right
+  rwl: 0  # rear walking left
+  rwr: 0  # rear walking right
+  fsl: 0  # front steering left
+  fsr: 0  # front steering right
+  rsl: 0  # rear steering left
+  rsr: 0  # rear steering right
+
+

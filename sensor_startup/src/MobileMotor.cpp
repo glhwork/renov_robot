@@ -4,7 +4,6 @@ using mobile::MobileMotor;
 
 MobileMotor::MobileMotor() {
   n_private = ros::NodeHandle("motor_core");
-  if_initial = true;
   ParamInit();
   ReadFile(file_address);
   Setup();
@@ -232,17 +231,16 @@ bool MobileMotor::EnableMotor() {
                 obj[i * 3 + 2].DataLen);
   }
   if (!SendCommand(obj, id_num*ena_cmd_num)) {
+    delete [] obj;
     return false;
   } else {
+    delete [] obj;
     return true;
   }
-  delete [] obj;
 }
 
 void MobileMotor::DataInitial(BYTE* data, uint8_t* cmd, const uint& len) {
-  int n = sizeof(cmd) / sizeof(cmd[0]);
-  std::cout << "get data : ";
-  for (size_t i = 0; i < n; i++) {
+  for (size_t i = 0; i < len; i++) {
     data[i] = cmd[i];
     std::cout << cmd[i] << "  ";
   }
@@ -299,76 +297,22 @@ void MobileMotor::ControlCallback(const sensor_msgs::JointState& joint_state) {
     return ;
   }
   
-  if (joint_state.velocity.size() < 4) {
-    ROS_WARN("Incorrect quantity of velocity commands");
+  if (joint_state.velocity.size() < 8 || joint_state.position.size() < 8) {
+    ROS_WARN("Incorrect quantity of commands");
     return ;
   }
-
-  // 0->left, 1->right for walking driver1 front
-  // 2->left, 3->right for walking driver2 rear
-  // 4->left, 5->right for steering driver1 front
-  // 6->left. 7->right for steering driver 2 rear
-  PVCI_CAN_OBJ obj = new VCI_CAN_OBJ[8];
   
-  switch (walking_mode) {
-    case POSITION_MODE: {
-      std::cout << "position mode for walking is under developing" << std::endl;
-      break;
-    }
-    case VELOCITY_MODE: {
-      obj[0].ID += cob_id[0];
-      obj[1].ID += cob_id[0];
-
-      obj[2].ID += cob_id[1];
-      obj[3].ID += cob_id[1];
-
-      int len = 
-          sizeof(cmd.BASE_VELOCITY_COMMAND) / sizeof(cmd.BASE_VELOCITY_COMMAND);
-      obj[0].DataLen = 
-      obj[1].DataLen = 
-      obj[2].DataLen = 
-      obj[3].DataLen = len;
-
-      DataTransform(obj[0].Data, cmd.BASE_VELOCITY_COMMAND, len, LEFT_MOTOR,
-                    joint_state.velocity[0]);
-      DataTransform(obj[1].Data, cmd.BASE_VELOCITY_COMMAND, len, RIGHT_MOTOR,
-                    joint_state.velocity[1]);
-      DataTransform(obj[2].Data, cmd.BASE_VELOCITY_COMMAND, len, LEFT_MOTOR,
-                    joint_state.velocity[2]);
-      DataTransform(obj[3].Data, cmd.BASE_VELOCITY_COMMAND, len, RIGHT_MOTOR,
-                    joint_state.velocity[3]);
-      break;
-    }
-    case CURRENT_MODE: {
-      std::cout << "current mode for walking is under developing" << std::endl;
-      break;
-    }
-    default: {
-      break;  // break or return ???
-    }
-
-    switch (steering_mode) {
-      case POSITION_MODE: {
-      
-        break;
-      }
-      case VELOCITY_MODE: {
-        std::cout << "velocity mode for steering is under developing" 
-                  << std::endl;
-        break;
-      }
-      case CURRENT_MODE: {
-        std::cout << "current mode for steering is under developing" << std::endl;
-        break;
-      }
-      default: {
-        break;  // break or return ???
-      }
-    }
-
+  // get data from first four elements of velocity for walking and
+  // last four elements of position for steering
+  std::vector<float> state_cmds;
+  for (size_t i = 0; i < 4; i++) {
+    state_cmds.push_back(joint_state.velocity[i]);
   }
-
-  delete [] obj;
+  for (size_t i = 0; i < 4; i++) {
+    state_cmds.push_back(joint_state.position[i+4]);
+  }
+  ControlMotor(state_cmds);
+  
 }
 
 void MobileMotor::DataTransform(BYTE* data, uint8_t* cmd, const uint& len, 
@@ -406,6 +350,10 @@ void MobileMotor::TeleopCallback(const geometry_msgs::Twist& twist) {
     ROS_WARN("teleop failure caused by initialization failure");
     return ;
   }
+ 
+  
+
+  
 }
 
 void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
@@ -415,3 +363,72 @@ void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
   }
 }
 
+void MobileMotor::ControlMotor(const std::vector<float>& state) {
+
+  // 0->left, 1->right for walking driver 1 front
+  // 2->left, 3->right for walking driver 2 rear
+  // 4->left, 5->right for steering driver 1 front
+  // 6->left. 7->right for steering driver 2 rear
+  int obj_num = 8;
+  PVCI_CAN_OBJ obj = new VCI_CAN_OBJ[obj_num];
+
+  switch (walking_mode) {
+    case POSITION_MODE: {
+      std::cout << "position mode for walking is under developing" << std::endl;
+      break;
+    }
+    case VELOCITY_MODE: {
+      obj[0].ID += cob_id[0];
+      obj[1].ID += cob_id[0];
+
+      obj[2].ID += cob_id[1];
+      obj[3].ID += cob_id[1];
+
+      int len =
+          sizeof(cmd.BASE_VELOCITY_COMMAND) / sizeof(cmd.BASE_VELOCITY_COMMAND);
+      obj[0].DataLen = 
+      obj[1].DataLen = 
+      obj[2].DataLen = 
+      obj[3].DataLen = len;
+
+      DataTransform(obj[0].Data, cmd.BASE_VELOCITY_COMMAND, 
+                    len, LEFT_MOTOR, state[0]);
+      DataTransform(obj[1].Data, cmd.BASE_VELOCITY_COMMAND, 
+                    len, RIGHT_MOTOR, state[1]);
+      DataTransform(obj[2].Data, cmd.BASE_VELOCITY_COMMAND, 
+                    len, LEFT_MOTOR, state[2]);
+      DataTransform(obj[3].Data, cmd.BASE_VELOCITY_COMMAND, 
+                    len, RIGHT_MOTOR, state[3]);
+      break;
+    }
+    case CURRENT_MODE: {
+      std::cout << "current mode for walking is under developing" << std::endl;
+      break;
+    }
+    default: {
+      break;  // break or return ???
+    }
+  }
+
+  switch (steering_mode) {
+    case POSITION_MODE: {
+      break;
+    }
+    case VELOCITY_MODE: {
+      std::cout << "velocity mode for steering is under developing"
+                << std::endl;
+      break;
+    }
+    case CURRENT_MODE: {
+      std::cout << "current mode for steering is under developing" << std::endl;
+      break;
+    }
+    default: {
+      break;  // break or return ???
+    }
+  }
+
+  SendCommand(obj, obj_num);
+
+  delete[] obj;
+}

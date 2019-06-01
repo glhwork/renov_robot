@@ -21,7 +21,12 @@ catkin_package(
 
 include_directories(
   include
+  lib
   ${catkin_INCLUDE_DIRS}
+)
+
+link_directories(
+  lib
 )
 
 add_library(teleop

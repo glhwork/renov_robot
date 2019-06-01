@@ -72,3 +72,10 @@ target_link_libraries(test_node
   usbcan
   ${catkin_LIBRARIES}
 )
+
+add_executable(abs_encoder
+  src/abs_encoder.cpp
+)
+target_link_libraries(abs_encoder
+  ${catkin_LIBRARIES}
+)
