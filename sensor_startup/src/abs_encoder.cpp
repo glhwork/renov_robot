@@ -6,7 +6,8 @@
 #include "sensor_msgs/Range.h"
 
 typedef uint8_t _u8;
-_u8 cmd[6] = {0x01, 0x03, 0xaa, 0x16, 0x0e, 0xb6};
+typedef uint16_t _u16;
+_u8 cmd[8] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x0b};
 serial::Serial encod_ser;
 
 void InitSerial(const std::string& port_id, const int& baudrate);
@@ -58,17 +59,31 @@ void InitSerial(const std::string& port_id, const int& baudrate) {
 }
 
 void Loop(ros::Publisher pub) {
-  encod_ser.write(cmd, 6);
-  _u8* buffer;
-  int size;
-  encod_ser.read(buffer, size);
+  size_t n = sizeof(cmd) / sizeof(cmd[0]);
+  encod_ser.write(cmd, n);
 
-  int result;
-  result = (buffer[2] << 8 + buffer[3]);
-  sensor_msgs::Range impulse;
-  impulse.header.frame_id = "abs_encoder";
-  impulse.header.stamp = ros::Time::now();
+  if (encod_ser.available()) {
+    std::vector<_u8> data;
+    int size = encod_ser.available();
+    encod_ser.read(data, size); 
+    
+    for (size_t i = 0; i < size; i++) {
+      std::cout << "0x" << std::hex << (_u16)data[i] << "  ";
+    } 
+    std::cout << std::endl;
 
-  impulse.range = (double)result;
-  pub.publish(impulse);
+    int result;
+    result = ((_u16)data[3] << 24) + 
+             ((_u16)data[4] << 16) +
+             ((_u16)data[5] << 8) + 
+             (_u16)data[6]; 
+
+    sensor_msgs::Range impulse;
+    impulse.header.frame_id = "abs_encoder";
+    impulse.header.stamp = ros::Time::now();
+
+    impulse.range = (double)result;
+    pub.publish(impulse);
+  }
+  
 }
