@@ -86,7 +86,10 @@ class MobileMotor {
   int steering_mode;
   int walking_mode;
 
+  // lines of encoders
   uint encoder_lines;
+  // max value of velocity when used in position mode
+  uint max_velocity;
   
   
 

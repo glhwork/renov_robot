@@ -35,6 +35,7 @@ void MobileMotor::ParamInit() {
 }
 
 void MobileMotor::ReadFile(const std::string& address) {
+  std::cout << " address is : " << address << std::endl;
   YAML::Node param = YAML::LoadFile(address);
 
   device_type = param["device_type"].as<int>();
@@ -46,6 +47,7 @@ void MobileMotor::ReadFile(const std::string& address) {
   walking_mode = param["walking_mode"].as<int>();
 
   encoder_lines = (uint)param["encoder_lines"].as<int>();
+  max_velocity = (uint)param["max_velocity"].as<int>();
   
   cob_id[0] = param["walking_channel"]["chn1"].as<int>();
   cob_id[1] = param["walking_channel"]["chn2"].as<int>();
@@ -70,7 +72,7 @@ bool MobileMotor::CanBusInit() {
 
   VCI_INIT_CONFIG config;
   config.AccCode = 0x00;
-  config.AccMask = 0x00;
+  config.AccMask = 0xFFFFFFFF;
   config.Filter = 8;
   config.Mode = 0;
   config.Timing0 = 0x00;
@@ -112,6 +114,22 @@ bool MobileMotor::SetMode() {
           sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
       ModeCommand(cob_id[0], cob_id[1], len, POSITION_MODE);
       std::cout << "walking mode == position mode" << std::endl;
+
+      // pre-set the velocity under position mode
+      VCI_CAN_OBJ* pre_v;
+      pre_v = GetVciObject(2);
+      pre_v[0].ID = pre_v[0].ID + cob_id[0];
+      pre_v[1].ID = pre_v[1].ID + cob_id[1];
+      len = sizeof(cmd.SET_PROFILE_VELOCITY) /
+            sizeof(cmd.SET_PROFILE_VELOCITY[0]);
+      DataTransform(pre_v[0].Data, cmd.SET_PROFILE_VELOCITY, len, LEFT_MOTOR,
+                    (float)max_velocity);
+      DataTransform(pre_v[1].Data, cmd.SET_PROFILE_VELOCITY, len, RIGHT_MOTOR,
+                    (float)max_velocity);
+
+      SendCommand(pre_v, 2);
+
+      delete[] pre_v;
       break;
     }
     case VELOCITY_MODE: {
@@ -141,6 +159,21 @@ bool MobileMotor::SetMode() {
           sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
       ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
       std::cout << "steering mode == position mode" << std::endl;
+
+      VCI_CAN_OBJ* pre_v;
+      pre_v = GetVciObject(2);
+      pre_v[0].ID = pre_v[0].ID + cob_id[2];
+      pre_v[1].ID = pre_v[1].ID + cob_id[3];
+      len = sizeof(cmd.SET_PROFILE_VELOCITY) /
+            sizeof(cmd.SET_PROFILE_VELOCITY[0]);
+      DataTransform(pre_v[0].Data, cmd.SET_PROFILE_VELOCITY, len, LEFT_MOTOR,
+                    (float)max_velocity);
+      DataTransform(pre_v[1].Data, cmd.SET_PROFILE_VELOCITY, len, RIGHT_MOTOR,
+                    (float)max_velocity);
+
+      SendCommand(pre_v, 2);
+
+      delete[] pre_v;
       break;
     }
     case VELOCITY_MODE: {

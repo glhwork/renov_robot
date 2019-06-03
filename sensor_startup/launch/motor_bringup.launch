@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="sensor_startup" type="motor_core" name="motor_core">
+  <node pkg="sensor_startup" type="motor_core" name="motor_core" output="screen">
     <param name="port" value="ttyUSB0"/>
     <param name="state_topic" value="motor_state"/>
     <param name="file_address" 
