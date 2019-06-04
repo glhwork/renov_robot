@@ -40,7 +40,7 @@ add_library(mobile_sensor
 )
 target_link_libraries(mobile_sensor
   yaml-cpp
-  usbcan
+  controlcan
   ${catkin_LIBRARIES}
 )
 
@@ -50,9 +50,10 @@ add_executable(imu_core
 )
 target_link_libraries(imu_core
   mobile_sensor
-  usbcan
+  controlcan
   ${catkin_LIBRARIES}
 )
+
 
 # define the motor data node
 add_executable(motor_core
@@ -61,7 +62,7 @@ add_executable(motor_core
 target_link_libraries(motor_core
   mobile_sensor
   yaml-cpp
-  usbcan
+  controlcan
   ${catkin_LIBRARIES} 
 )
 
@@ -69,7 +70,7 @@ add_executable(test_node
   src/test.cpp
 )
 target_link_libraries(test_node
-  usbcan
+  controlcan
   ${catkin_LIBRARIES}
 )
 
