@@ -80,3 +80,10 @@ add_executable(abs_encoder
 target_link_libraries(abs_encoder
   ${catkin_LIBRARIES}
 )
+
+add_executable(stop_motor
+  src/stop_motor.cpp
+)
+target_link_libraries(stop_motor
+  ${catkin_LIBRARIES}
+)

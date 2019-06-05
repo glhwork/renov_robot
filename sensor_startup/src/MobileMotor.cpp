@@ -11,11 +11,7 @@ MobileMotor::MobileMotor() {
 }
 
 MobileMotor::~MobileMotor() {
-  if (!VCI_CloseDevice(device_type, device_index)) {
-    ROS_WARN("close device failure");
-  } else {
-    ROS_INFO("close device success");
-  }
+  
 }
 
 void MobileMotor::ParamInit() {
@@ -473,8 +469,12 @@ void MobileMotor::ControlMotor(const std::vector<float>& state) {
 }
 
 void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
+
+  int len;
+
+  // send command to disenable the drivers
   PVCI_CAN_OBJ obj = GetVciObject(id_num);
-  int len = sizeof(cmd.DISENABLE_COMMAND) / sizeof(cmd.DISENABLE_COMMAND[0]);
+  len = sizeof(cmd.DISENABLE_COMMAND) / sizeof(cmd.DISENABLE_COMMAND[0]);
   for (size_t i = 0; i < id_num; i++) {
     obj[i].ID = obj[i].ID + i + 1;
     obj[i].ExternFlag = 0;
@@ -485,4 +485,24 @@ void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
   }
   SendCommand(obj, id_num);
   delete [] obj;
+
+  // send command to save the current state of drivers and motors
+  obj = GetVciObject(id_num);  
+  len = sizeof(cmd.SAVE_PARAMETERS) / sizeof(cmd.SAVE_PARAMETERS[0]);
+  for (size_t i = 0; i < id_num; i++) {
+    obj[i].ID = obj[i].ID + i + 1;
+    obj[i].ExternFlag = 0;
+    obj[i].RemoteFlag = 0;
+    obj[i].SendType = 0;
+    obj[i].DataLen = len;
+    DataInitial(obj[i].Data, cmd.SAVE_PARAMETERS, len);
+  }
+  SendCommand(obj, id_num);
+  delete [] obj;
+
+  if (!VCI_CloseDevice(device_type, device_index)) {
+    ROS_WARN("close device failure");
+  } else {
+    ROS_INFO("close device success");
+  }
 }
