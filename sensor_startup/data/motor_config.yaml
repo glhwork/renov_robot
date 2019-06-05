@@ -1,13 +1,17 @@
-device_type: 3
-device_index: 1
-can_index: 0
-id_num: 4
+device_type: 3  # divice type number of can analyst
+device_index: 1  # divice index of can analyst
+can_index: 0  # channel number of can 
+id_num: 4  # total quantity of device attached to can analyst
 
+# mode of motors (steering && walking)
+# 0 -> position; 1 -> velocity; 2 -> current
 steering_mode: 0 
 walking_mode: 1
 
 encoder_lines: 2500
-max_velocity: 800
+# profile velocity applied to limit maximum 
+# velocity especially for position mode
+max_velocity: 800  
 
 walking_channel:
   chn1: 1  # front walking wheels

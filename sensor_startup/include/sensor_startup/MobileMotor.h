@@ -9,6 +9,7 @@
 #include "yaml-cpp/yaml.h"
 
 #include "ros/ros.h"
+#include "std_msgs/Bool.h"
 #include "sensor_msgs/JointState.h"
 #include "geometry_msgs/Twist.h"
 #include "serial/serial.h"
@@ -50,6 +51,7 @@ class MobileMotor {
 
   void TeleopCallback(const geometry_msgs::Twist& twist);
   void FeedbackCallback(const ros::TimerEvent&);
+  void StopCallback(const std_msgs::Bool& stop);
   void ControlMotor(const std::vector<float>& velocity);
 
  protected:
@@ -90,7 +92,8 @@ class MobileMotor {
   uint encoder_lines;
   // max value of velocity when used in position mode
   uint max_velocity;
-  
+  // command sign of each motor
+  int motor_sign[8];
   
 
   bool if_initial;
