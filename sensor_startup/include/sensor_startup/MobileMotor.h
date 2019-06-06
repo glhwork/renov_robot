@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <unistd.h>
 
 #include "yaml-cpp/yaml.h"
 
@@ -43,7 +44,7 @@ class MobileMotor {
 
   VCI_CAN_OBJ* GetVciObject(const int& obj_num);
   void IdCheck();
-  void SendCommand(PVCI_CAN_OBJ obj, const uint& len);
+  bool SendCommand(PVCI_CAN_OBJ obj, const uint& len);
 
   void ControlCallback(const sensor_msgs::JointState& joint_state);
   void DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
@@ -64,22 +65,27 @@ class MobileMotor {
 
  private:
 
-  /* PARAMETERS */
+  /* LAUNCH PARAMETERS */
   // port connected with CAN-USB converter
   std::string port;
   // topic used to publish joint states
   std::string state_topic;
   // address of yaml file containing motor driver configurations
   std::string file_address;
+  // delay time used to pause between two commands
+  int delay_time;
+  // time to determine how long shoud it wait if buffer is empty
+  int wait_time;
+
   
 
  
 
-  /* GLOBAL VARIABLES */
-  // this CAN device only has one can channel
-  int device_index;
+  /* CONFIG PARAMETERS */
+  // this CAN device has two can channels
   // device type of CAN-Analyst, refer to controlcan.h
   int device_type;
+  int device_index;
   int can_index;
   // id_num means the quantity of motor-drivers we use
   int id_num;
@@ -92,12 +98,18 @@ class MobileMotor {
 
   // lines of encoders
   uint encoder_lines;
+  // reduction ratio of steering or walking motors
+  double reduc_ratio_s;
+  double reduc_ratio_w;
   // max value of velocity when used in position mode
   uint max_velocity;
   // command sign of each motor
   int motor_sign[8];
-  
+  // homing position
+  int home[4];
 
+  
+  /* GLOBAL VARIABLES */
   bool if_initial;
 
 

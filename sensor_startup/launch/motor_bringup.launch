@@ -4,9 +4,8 @@
     <param name="state_topic" value="motor_state"/>
     <param name="file_address" 
       value="/home/glh/renov_ws/src/renov_robot/sensor_startup/data/motor_config.yaml"/>
-    <!-- <param name="device_type" value="3"/>
-    <param name="steering_mode" value="0"/>
-    <param name="walking_mode" value="1"/> -->
+    <param name="delay_time" value="1000"/>
+    <param name="wait_time" value="10"/>
   </node>
 
 </launch>

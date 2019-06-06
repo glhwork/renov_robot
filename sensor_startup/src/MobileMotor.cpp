@@ -26,6 +26,12 @@ void MobileMotor::ParamInit() {
     file_address = 
       "/home/glh/renov_ws/src/renov_robot/sensor_startup/data/motor_config.yaml";
   }
+  if (!n_private.getParam("delay_time", delay_time)) {
+    delay_time = 1000;
+  }
+  if (!n_private.getParam("wait_time", wait_time)) {
+    wait_time = 10;
+  }
 
 
 }
@@ -58,6 +64,14 @@ void MobileMotor::ReadFile(const std::string& address) {
   motor_sign[5] = param["motor_sign"]["fsr"].as<int>();
   motor_sign[6] = param["motor_sign"]["rsl"].as<int>();
   motor_sign[7] = param["motor_sign"]["rsr"].as<int>();
+  
+  home[0] = param["homing"]["fl"].as<int>();
+  home[1] = param["homing"]["fr"].as<int>();
+  home[2] = param["homing"]["rl"].as<int>();
+  home[3] = param["homing"]["rr"].as<int>();
+
+  reduc_ratio_s = param["reduc_ratio_s"].as<double>();
+  reduc_ratio_w = param["reduc_ratio_w"].as<double>();
 
   IdCheck();
 }
@@ -117,8 +131,7 @@ bool MobileMotor::SetMode() {
     case POSITION_MODE: {
       int len =
           sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
-      ModeCommand(cob_id[0], cob_id[1], len, POSITION_MODE);
-      std::cout << "walking mode == position mode" << std::endl;
+  ;
 
       // pre-set the velocity under position mode
       // i.e. the limit velocity of this driver
@@ -136,6 +149,9 @@ bool MobileMotor::SetMode() {
       SendCommand(pre_v, 2);
 
       delete [] pre_v;
+
+      ModeCommand(cob_id[0], cob_id[1], len, POSITION_MODE);
+      std::cout << "walking mode == position mode" << std::endl;
       break;
     }
     case VELOCITY_MODE: {
@@ -163,8 +179,6 @@ bool MobileMotor::SetMode() {
     case POSITION_MODE: {
       int len =
           sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
-      ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
-      std::cout << "steering mode == position mode" << std::endl;
 
       VCI_CAN_OBJ* pre_v;
       pre_v = GetVciObject(2);
@@ -179,7 +193,10 @@ bool MobileMotor::SetMode() {
 
       SendCommand(pre_v, 2);
 
-      delete[] pre_v;
+      delete [] pre_v;
+      
+      ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
+      std::cout << "steering mode == position mode" << std::endl;
       break;
     }
     case VELOCITY_MODE: {
@@ -325,14 +342,20 @@ void MobileMotor::IdCheck() {
 
 }
 
-void MobileMotor::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
+bool MobileMotor::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
 
   // VCI_Transmit(device_type, device_index, can_index, obj, len);
 
   for (size_t i = 0; i < len; i++) {
-    VCI_Transmit(device_type, device_index, can_index, &obj[i], 1);
-    usleep(10);
+    int info_num;
+    info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], 1);
+    if (0 == info_num) {
+      return false;
+    }
+    usleep(delay_time);
   }
+
+  return true;
 
   
 
@@ -397,10 +420,8 @@ void MobileMotor::TeleopCallback(const geometry_msgs::Twist& twist) {
     ROS_WARN("teleop failure caused by initialization failure");
     return ;
   }
- 
-  
 
-  
+
 }
 
 void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
@@ -408,6 +429,34 @@ void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
     ROS_WARN("feedback failure caused by initialization failure");
     return ;
   }
+
+  uint buffer_size;
+  buffer_size = VCI_GetReceiveNum(device_type, device_index, can_index);
+  if (buffer_size = 0xffffffff) {
+    ROS_ERROR("error in can analyst!!!");
+    return ;
+  } else if (0 == buffer_size) {
+    ROS_WARN("no data in buffer!!");
+    return ;
+  }
+  
+  PVCI_CAN_OBJ obj;
+  VCI_Receive(device_type, device_index, can_index, obj, buffer_size, wait_time);
+  for (size_t i = 0; i < buffer_size; i++) {
+    if ((REC_BASE_ID + cob_id[0]) == obj[i].ID) {
+
+    }
+    if ((REC_BASE_ID + cob_id[1]) == obj[i].ID) {
+
+    }
+    if ((REC_BASE_ID + cob_id[2]) == obj[i].ID) {
+
+    }
+    if ((REC_BASE_ID + cob_id[3]) == obj[i].ID) {
+
+    }
+  }
+  
 }
 
 void MobileMotor::ControlMotor(const std::vector<float>& state) {
@@ -459,6 +508,7 @@ void MobileMotor::ControlMotor(const std::vector<float>& state) {
 
   switch (steering_mode) {
     case POSITION_MODE: {
+
       break;
     }
     case VELOCITY_MODE: {
