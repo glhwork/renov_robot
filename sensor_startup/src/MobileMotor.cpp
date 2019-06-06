@@ -135,7 +135,7 @@ bool MobileMotor::SetMode() {
 
       SendCommand(pre_v, 2);
 
-      delete[] pre_v;
+      delete [] pre_v;
       break;
     }
     case VELOCITY_MODE: {
@@ -221,16 +221,19 @@ void MobileMotor::ModeCommand(const int& id_0, const int& id_1,
     case POSITION_MODE: {
       DataInitial(obj[0].Data, cmd.SET_MODE_POSITION, len);
       DataInitial(obj[1].Data, cmd.SET_MODE_POSITION, len);
+      PrintTest(obj[0].Data, len, "set position mode : ");
       break;
     }
     case VELOCITY_MODE: {
       DataInitial(obj[0].Data, cmd.SET_MODE_VELOCITY, len);
       DataInitial(obj[1].Data, cmd.SET_MODE_VELOCITY, len);
+      PrintTest(obj[0].Data, len, "set velocity mode : ");
       break;
     }
     case CURRENT_MODE: {
       DataInitial(obj[0].Data, cmd.SET_MODE_CURRENT, len);
       DataInitial(obj[1].Data, cmd.SET_MODE_CURRENT, len);
+      PrintTest(obj[0].Data, len, "set current mode : ");
       break;
     }
     default: {
@@ -265,6 +268,8 @@ bool MobileMotor::EnableMotor() {
     DataInitial(obj[i * 3 + 2].Data, cmd.ENABLE_COMMAND_3,
                 obj[i * 3 + 2].DataLen);
   }
+
+  PrintTest(obj[0].Data, obj[0].DataLen, "enable the motor : ");
   if (!SendCommand(obj, id_num*ena_cmd_num)) {
     delete [] obj;
     return false;
@@ -320,9 +325,16 @@ void MobileMotor::IdCheck() {
 
 }
 
-uint MobileMotor::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
+void MobileMotor::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
 
-  return VCI_Transmit(device_type, device_index, can_index, obj, len);
+  // VCI_Transmit(device_type, device_index, can_index, obj, len);
+
+  for (size_t i = 0; i < len; i++) {
+    VCI_Transmit(device_type, device_index, can_index, &obj[i], 1);
+    usleep(10);
+  }
+
+  
 
 }
 
@@ -483,6 +495,7 @@ void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
     obj[i].DataLen = len; 
     DataInitial(obj[i].Data, cmd.DISENABLE_COMMAND, len);
   }
+  PrintTest(obj[0].Data, len, "disenable process : ");
   SendCommand(obj, id_num);
   delete [] obj;
 
@@ -497,6 +510,7 @@ void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
     obj[i].DataLen = len;
     DataInitial(obj[i].Data, cmd.SAVE_PARAMETERS, len);
   }
+  PrintTest(obj[0].Data, len, "save parameter : ");
   SendCommand(obj, id_num);
   delete [] obj;
 
@@ -505,4 +519,12 @@ void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
   } else {
     ROS_INFO("close device success");
   }
+}
+
+void MobileMotor::PrintTest(BYTE* data, const int& len, const std::string& str) {
+  std::cout << str << "  ";
+  for (size_t i = 0; i < len; i++) {
+    std::cout << std::hex << "0x" << (int)data[i] << " "; 
+  }
+  std::cout << std::endl;
 }

@@ -43,7 +43,7 @@ class MobileMotor {
 
   VCI_CAN_OBJ* GetVciObject(const int& obj_num);
   void IdCheck();
-  uint SendCommand(PVCI_CAN_OBJ obj, const uint& len);
+  void SendCommand(PVCI_CAN_OBJ obj, const uint& len);
 
   void ControlCallback(const sensor_msgs::JointState& joint_state);
   void DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
@@ -53,6 +53,8 @@ class MobileMotor {
   void FeedbackCallback(const ros::TimerEvent&);
   void StopCallback(const std_msgs::Bool& stop);
   void ControlMotor(const std::vector<float>& velocity);
+   
+  void PrintTest(BYTE* data, const int& len, const std::string& str);
 
  protected:
   // COBID of multiple motor drivers
