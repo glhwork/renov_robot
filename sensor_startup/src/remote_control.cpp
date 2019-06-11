@@ -8,7 +8,7 @@ namespace mobile {
 class Tele : public MobileMotor {
   public:
     Tele() : MobileMotor() { 
-      SetTeleopMode();
+      // SetTeleopMode();
       ReadTeleopFile(); 
     }
     virtual ~Tele() {}
@@ -24,15 +24,15 @@ class Tele : public MobileMotor {
 
 };
 
-void Tele::SetTeleopMode() {
-  int len;
+// void Tele::SetTeleopMode() {
+//   int len;
 
-  len = sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
-  ModeCommand(cob_id[0], cob_id[1], len, VELOCITY_MODE);
+//   len = sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
+//   ModeCommand(cob_id[0], cob_id[1], len, VELOCITY_MODE);
 
-  len = sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
-  ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
-}
+//   len = sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
+//   ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
+// }
 
 void Tele::ReadTeleopFile() {
   YAML::Node config 
@@ -48,23 +48,26 @@ void Tele::TeleControl(const geometry_msgs::Twist::ConstPtr& twist) {
   double vx = twist->linear.x;
   double az = twist->angular.z;
   
-  if (vx != 0) {
+  if (vx != 0 && az == 0) {
     std::vector<float> velocity;
     for (size_t i = 0; i < 4; i++) {
-      velocity.push_back(vx);
+      velocity.push_back((float)vx);
     }
     for (size_t i = 0; i < 4; i++) {
       velocity.push_back(0);
     }
     ControlMotor(velocity);
-  } else {
+  } else if (vx == 0 && az != 0) {
     double hypotenuse = sqrt(pow(wheel_dis_len, 2) + pow(wheel_dis_wid, 2));
     double r = 0.5 * hypotenuse; 
 
-    double alpha = atan(wheel_dis_len / wheel_dis_wid);
+    float alpha = fabs(atan(wheel_dis_len / wheel_dis_wid));
     std::vector<float> velocity;
-
-
+    float v_linear = az * r;
+    velocity.resize(8);
+    velocity = {-v_linear, v_linear, -v_linear, v_linear,
+                   -alpha,    alpha,     alpha,   -alpha};
+    ControlMotor(velocity);
 
   }
 }
