@@ -1,5 +1,5 @@
-device_type: 3  # divice type number of can analyst
-device_index: 1  # divice index of can analyst
+device_type: 4  # divice type number of can analyst
+device_index: 0  # divice index of can analyst
 can_index: 0  # channel number of can 
 id_num: 4  # total quantity of device attached to can analyst
 

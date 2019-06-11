@@ -82,11 +82,13 @@ void MobileMotor::Setup() {
 }
 
 bool MobileMotor::CanBusInit() {
-  
-  if (!VCI_OpenDevice(device_type, device_index, 0)) {
+
+  int flag;
+  flag = VCI_OpenDevice(device_type, device_index, 0);
+  if (-1 == flag || 0 == flag) {
     ROS_ERROR("open CAN on ttyUSB-%d failure", (int)device_index);
     return false;
-  } else {
+  } else if (1 == flag) {
     ROS_INFO("open CAN successfully");
   }
 
@@ -98,17 +100,19 @@ bool MobileMotor::CanBusInit() {
   config.Timing0 = 0x00;
   config.Timing1 = 0x1c;
   
-  if (!VCI_InitCAN(device_type, device_index, can_index, &config)) {
+  flag = VCI_InitCAN(device_type, device_index, can_index, &config);
+  if (-1 == flag || 0 == flag) {
     ROS_ERROR("initialize failure");
     return false;
-  } else {
+  } else if (1 == flag) {
     ROS_INFO("initialize successfully");
   }
 
-  if (!VCI_StartCAN(device_type, device_index, can_index)) {
+  flag = VCI_StartCAN(device_type, device_index, can_index);
+  if (-1 == flag || 0 == flag) {
     std::cout << "start failure" << std::endl;
     return false;
-  } else {
+  } else if (1 == flag) {
     std::cout << "start successfully" << std::endl;
   }
 
@@ -130,9 +134,7 @@ bool MobileMotor::SetMode() {
   // set mode of walking motors
   switch (walking_mode) {
     case POSITION_MODE: {
-      int len =
-          sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
-  ;
+      int len;
 
       // pre-set the velocity under position mode
       // i.e. the limit velocity of this driver
@@ -150,7 +152,9 @@ bool MobileMotor::SetMode() {
       SendCommand(pre_v, 2);
 
       delete [] pre_v;
-
+      
+      len = sizeof(cmd.SET_MODE_POSITION) / 
+            sizeof(cmd.SET_MODE_POSITION);
       ModeCommand(cob_id[0], cob_id[1], len, POSITION_MODE);
       std::cout << "walking mode == position mode" << std::endl;
       break;
