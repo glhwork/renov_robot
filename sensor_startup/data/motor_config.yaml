@@ -8,9 +8,10 @@ id_num: 4  # total quantity of device attached to can analyst
 steering_mode: 0 
 walking_mode: 1
 
-encoder_lines: 2500
-reduc_ratio_s: 20  # reduction ratio of steering motor
-reduc_ratio_w: 20  # reduction ratio of walking motor
+encoder_s: 1024  # encoder line of steering motor
+encoder_w: 2500  # encoder line of walking motor
+reduc_ratio_s: 40  # reduction ratio of steering motor
+reduc_ratio_w: 22.5  # reduction ratio of walking motor
 # profile velocity applied to limit maximum 
 # velocity especially for position mode
 max_velocity: 800  

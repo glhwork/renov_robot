@@ -8,14 +8,23 @@ int main(int argc, char** argv) {
   ros::NodeHandle nh;
 
   ros::Publisher pub = nh.advertise<std_msgs::Bool>("stop", 100);
-  ros::Rate r(1);
+  ros::Rate r(10);
+
+  int n = 0;
   while (ros::ok()) {
-    std_msgs::Bool stop_cmd;
-    stop_cmd.data = true;
-    pub.publish(stop_cmd);
+    if (n < 4) {
+      std_msgs::Bool stop_cmd;
+      stop_cmd.data = true;
+      pub.publish(stop_cmd);
+    }
+    n++;
 
     ros::spinOnce();
     r.sleep();
   }
+  // std_msgs::Bool stop_cmd;
+  // stop_cmd.data = true;
+  // pub.publish(stop_cmd);
+  // ros::spinOnce();
   return 0;
 }

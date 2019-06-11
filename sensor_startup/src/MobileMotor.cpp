@@ -48,7 +48,8 @@ void MobileMotor::ReadFile(const std::string& address) {
   steering_mode = param["steering_mode"].as<int>();
   walking_mode = param["walking_mode"].as<int>();
 
-  encoder_lines = (uint)param["encoder_lines"].as<int>();
+  encoder_s = (uint)param["encoder_s"].as<int>();
+  encoder_w = (uint)param["encoder_w"].as<int>();
   max_velocity = (uint)param["max_velocity"].as<int>();
   
   cob_id[0] = param["walking_channel"]["chn1"].as<int>();
@@ -177,8 +178,7 @@ bool MobileMotor::SetMode() {
   // set mode of steering motors
   switch (steering_mode) {
     case POSITION_MODE: {
-      int len =
-          sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
+      int len;
 
       VCI_CAN_OBJ* pre_v;
       pre_v = GetVciObject(2);
@@ -192,9 +192,12 @@ bool MobileMotor::SetMode() {
                     (float)max_velocity);
 
       SendCommand(pre_v, 2);
+      PrintTest(pre_v[0].Data, len, "set profile velocity : ");
 
       delete [] pre_v;
-      
+
+      len = sizeof(cmd.SET_MODE_POSITION) / 
+            sizeof(cmd.SET_MODE_POSITION[0]);
       ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
       std::cout << "steering mode == position mode" << std::endl;
       break;
@@ -297,9 +300,10 @@ bool MobileMotor::EnableMotor() {
 }
 
 void MobileMotor::DataInitial(BYTE* data, uint8_t* cmd, const uint& len) {
+  std::cout << "initial data : ";
   for (size_t i = 0; i < len; i++) {
     data[i] = cmd[i];
-    std::cout << cmd[i] << "  ";
+    std::cout << std::hex << (int)cmd[i] << "  ";
   }
   std::cout << std::endl;
 }
@@ -386,7 +390,7 @@ void MobileMotor::ControlCallback(const sensor_msgs::JointState& joint_state) {
 }
 
 void MobileMotor::DataTransform(BYTE* data, uint8_t* cmd, const uint& len, 
-                                const uint8_t& index, const float& velo) {
+                                const uint8_t& index, const int& velo) {
   DataInitial(data, cmd, len);
   data[2] = index;
 
@@ -425,41 +429,45 @@ void MobileMotor::TeleopCallback(const geometry_msgs::Twist& twist) {
 }
 
 void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
-  if (!if_initial) {
-    ROS_WARN("feedback failure caused by initialization failure");
-    return ;
-  }
+  // if (!if_initial) {
+  //   ROS_WARN("feedback failure caused by initialization failure");
+  //   return ;
+  // }
 
-  uint buffer_size;
-  buffer_size = VCI_GetReceiveNum(device_type, device_index, can_index);
-  if (buffer_size = 0xffffffff) {
-    ROS_ERROR("error in can analyst!!!");
-    return ;
-  } else if (0 == buffer_size) {
-    ROS_WARN("no data in buffer!!");
-    return ;
-  }
+  // uint buffer_size;
+  // buffer_size = VCI_GetReceiveNum(device_type, device_index, can_index);
+  // if (0 == buffer_size) {
+  //   ROS_WARN("no data in buffer!!");
+  //   return ;
+  // }
   
-  PVCI_CAN_OBJ obj;
-  VCI_Receive(device_type, device_index, can_index, obj, buffer_size, wait_time);
-  for (size_t i = 0; i < buffer_size; i++) {
-    if ((REC_BASE_ID + cob_id[0]) == obj[i].ID) {
+  // PVCI_CAN_OBJ obj;
+  // uint rec_num = 
+  //   VCI_Receive(device_type, device_index, can_index, obj, buffer_size, wait_time);
+  // if (0xffffffff == rec_num) {
+  //   ROS_WARN("CAN reading error");
+  //   return ;
+  // }
+  // for (size_t i = 0; i < buffer_size; i++) {
+  //   if ((REC_BASE_ID + cob_id[0]) == obj[i].ID) {
 
-    }
-    if ((REC_BASE_ID + cob_id[1]) == obj[i].ID) {
+  //   }
+  //   if ((REC_BASE_ID + cob_id[1]) == obj[i].ID) {
 
-    }
-    if ((REC_BASE_ID + cob_id[2]) == obj[i].ID) {
+  //   }
+  //   if ((REC_BASE_ID + cob_id[2]) == obj[i].ID) {
 
-    }
-    if ((REC_BASE_ID + cob_id[3]) == obj[i].ID) {
+  //   }
+  //   if ((REC_BASE_ID + cob_id[3]) == obj[i].ID) {
 
-    }
-  }
+  //   }
+  // }
   
 }
 
-void MobileMotor::ControlMotor(const std::vector<float>& state) {
+void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
+
+  std::vector<int> state = CommandTransform(raw_state);
 
   // 0->left, 1->right for walking driver 1 front
   // 2->left, 3->right for walking driver 2 rear
@@ -480,8 +488,8 @@ void MobileMotor::ControlMotor(const std::vector<float>& state) {
       obj[2].ID += cob_id[1];
       obj[3].ID += cob_id[1];
 
-      int len =
-          sizeof(cmd.BASE_VELOCITY_COMMAND) / sizeof(cmd.BASE_VELOCITY_COMMAND);
+      int len = sizeof(cmd.BASE_VELOCITY_COMMAND) / 
+                sizeof(cmd.BASE_VELOCITY_COMMAND);
       obj[0].DataLen = 
       obj[1].DataLen = 
       obj[2].DataLen = 
@@ -508,7 +516,26 @@ void MobileMotor::ControlMotor(const std::vector<float>& state) {
 
   switch (steering_mode) {
     case POSITION_MODE: {
+      obj[4].ID += cob_id[2];
+      obj[5].ID += cob_id[2];
+      obj[6].ID += cob_id[3];
+      obj[7].ID += cob_id[3];
 
+      int len = sizeof(cmd.BASE_POSITION_COMMAND) / 
+                sizeof(cmd.BASE_POSITION_COMMAND[0]);
+      obj[4].DataLen =
+      obj[5].DataLen = 
+      obj[6].DataLen = 
+      obj[7].DataLen = len;
+
+      DataTransform(obj[4].Data, cmd.BASE_POSITION_COMMAND,
+                    len, LEFT_MOTOR, state[4]);
+      DataTransform(obj[5].Data, cmd.BASE_POSITION_COMMAND, 
+                    len, RIGHT_MOTOR, state[5]); 
+      DataTransform(obj[6].Data, cmd.BASE_POSITION_COMMAND, 
+                    len, LEFT_MOTOR, state[6]);
+      DataTransform(obj[7].Data, cmd.BASE_POSITION_COMMAND, 
+                    len, RIGHT_MOTOR, state[7]);
       break;
     }
     case VELOCITY_MODE: {
@@ -530,6 +557,24 @@ void MobileMotor::ControlMotor(const std::vector<float>& state) {
   delete[] obj;
 }
 
+std::vector<int> MobileMotor::CommandTransform(const std::vector<float>& raw_state) {
+  std::vector<int> state;
+
+  // determine the walking command
+  for (size_t i = 0; i < 4; i++) {
+    int tmp = raw_state[i] * reduc_ratio_w;
+    tmp = tmp * pow(-1, motor_sign[i] + 1);
+    state.push_back(tmp);
+  }
+
+  // determine the steering command
+  for (size_t i = 4; i < 8; i++) {
+    double data = raw_state[i] * reduc_ratio_s * encoder_s / (2 * PI);
+    int tmp = home[i - 4] + (int)data * pow(-1, motor_sign[i] + 1);
+    state.push_back(tmp);
+  }
+  return state;
+}
 void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
 
   int len;

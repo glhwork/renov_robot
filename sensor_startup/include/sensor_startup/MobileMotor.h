@@ -18,6 +18,7 @@
 #include "CanAssist.h"
 #include "controlcan.h"
 
+#define PI 3.141592653
 
 namespace mobile {
 
@@ -48,13 +49,14 @@ class MobileMotor {
 
   void ControlCallback(const sensor_msgs::JointState& joint_state);
   void DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
-                     const uint8_t& index, const float& velo);
+                     const uint8_t& index, const int& velo);
 
   void TeleopCallback(const geometry_msgs::Twist& twist);
   void FeedbackCallback(const ros::TimerEvent&);
   void StopCallback(const std_msgs::Bool& stop);
-  void ControlMotor(const std::vector<float>& velocity);
+  void ControlMotor(const std::vector<float>& raw_state);
    
+  std::vector<int> CommandTransform(const std::vector<float>& raw_state);
   void PrintTest(BYTE* data, const int& len, const std::string& str);
 
  protected:
@@ -97,7 +99,8 @@ class MobileMotor {
   int walking_mode;
 
   // lines of encoders
-  uint encoder_lines;
+  uint encoder_s;
+  uint encoder_w;
   // reduction ratio of steering or walking motors
   double reduc_ratio_s;
   double reduc_ratio_w;

@@ -117,15 +117,9 @@ void Brake() {
   command[1].DataLen = 8;
   GetCommand(command[0].Data, brake, 0x60);
   GetCommand(command[1].Data, brake, 0x68);
-  // while (1) {
-    // int k;
-    // std::cin >> k;
-    std::cout << "brake quantity : "
-              << VCI_Transmit(dev_type, dev_ind, can_ind, command, 2)
-              << std::endl;
-
-    // if (k == 0) break;
-  // }
+  std::cout << "brake quantity : "
+            << VCI_Transmit(dev_type, dev_ind, can_ind, command, 2)
+            << std::endl;
   // std::cout << "brake quantity : "
   //           << VCI_Transmit(dev_type, dev_ind, can_ind, command, 2)
   //           << std::endl;
@@ -190,12 +184,10 @@ int main(int argc, char** argv) {
     PositionMode(p);
     ros::Duration(2.0).sleep();
   } else if (1 == flag) {
-    std::cout << "velocity mode " << std::endl;
     Enable(velocity);
-    VelocityMode();
     dr.sleep();
     Brake();
-    ros::Duration(0.3).sleep();
+    ros::Duration(0.2).sleep();
   } 
 
   if (!VCI_CloseDevice(dev_type, dev_ind)) {
