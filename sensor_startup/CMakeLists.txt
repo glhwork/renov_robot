@@ -87,3 +87,10 @@ add_executable(stop_motor
 target_link_libraries(stop_motor
   ${catkin_LIBRARIES}
 )
+
+add_executable(send_test
+  src/send_test.cpp  
+)
+target_link_libraries(send_test
+  ${catkin_LIBRARIES}
+)
