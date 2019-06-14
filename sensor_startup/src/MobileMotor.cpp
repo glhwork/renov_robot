@@ -138,36 +138,40 @@ bool MobileMotor::SetMode() {
 
       // pre-set the velocity under position mode
       // i.e. the limit velocity of this driver
-      VCI_CAN_OBJ* pre_v;
+      PVCI_CAN_OBJ pre_v;
       pre_v = GetVciObject(2);
       pre_v[0].ID = pre_v[0].ID + cob_id[0];
       pre_v[1].ID = pre_v[1].ID + cob_id[1];
       len = sizeof(cmd.SET_PROFILE_VELOCITY) /
             sizeof(cmd.SET_PROFILE_VELOCITY[0]);
-      DataTransform(pre_v[0].Data, cmd.SET_PROFILE_VELOCITY, len, LEFT_MOTOR,
+      DataTransform(pre_v[0].Data, cmd.SET_PROFILE_VELOCITY, len, 0x60,
                     (float)max_velocity);
-      DataTransform(pre_v[1].Data, cmd.SET_PROFILE_VELOCITY, len, RIGHT_MOTOR,
+      DataTransform(pre_v[1].Data, cmd.SET_PROFILE_VELOCITY, len, 0x60,
                     (float)max_velocity);
 
+      /*****  attention this problem !!!!!!!!!  *****/
+      pre_v[0].DataLen = 
+      pre_v[1].DataLen = len;
       SendCommand(pre_v, 2);
 
       delete [] pre_v;
       
       len = sizeof(cmd.SET_MODE_POSITION) / 
-            sizeof(cmd.SET_MODE_POSITION);
+            sizeof(cmd.SET_MODE_POSITION[0]);
       ModeCommand(cob_id[0], cob_id[1], len, POSITION_MODE);
       std::cout << "walking mode == position mode" << std::endl;
       break;
     }
     case VELOCITY_MODE: {
-      int len =
-          sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
+      int len = sizeof(cmd.SET_MODE_VELOCITY) / 
+                sizeof(cmd.SET_MODE_VELOCITY[0]);
       ModeCommand(cob_id[0], cob_id[1], len, VELOCITY_MODE);
       std::cout << "walking mode == velocity mode" << std::endl;
       break;
     }
     case CURRENT_MODE: {
-      int len = sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
+      int len = sizeof(cmd.SET_MODE_CURRENT) / 
+                sizeof(cmd.SET_MODE_CURRENT[0]);
       ModeCommand(cob_id[0], cob_id[1], len, CURRENT_MODE);
       std::cout << "walking mode == current mode" << std::endl;
       break;
@@ -186,17 +190,23 @@ bool MobileMotor::SetMode() {
 
       VCI_CAN_OBJ* pre_v;
       pre_v = GetVciObject(2);
+;
       pre_v[0].ID = pre_v[0].ID + cob_id[2];
       pre_v[1].ID = pre_v[1].ID + cob_id[3];
       len = sizeof(cmd.SET_PROFILE_VELOCITY) /
             sizeof(cmd.SET_PROFILE_VELOCITY[0]);
-      DataTransform(pre_v[0].Data, cmd.SET_PROFILE_VELOCITY, len, LEFT_MOTOR,
+      DataTransform(pre_v[0].Data, cmd.SET_PROFILE_VELOCITY, len, 0x60,
                     (float)max_velocity);
-      DataTransform(pre_v[1].Data, cmd.SET_PROFILE_VELOCITY, len, RIGHT_MOTOR,
+      DataTransform(pre_v[1].Data, cmd.SET_PROFILE_VELOCITY, len, 0x60,
                     (float)max_velocity);
+      
+      pre_v[0].DataLen = 
+      pre_v[1].DataLen = len;
 
       SendCommand(pre_v, 2);
-      PrintTest(pre_v[0].Data, len, "set profile velocity : ");
+ 
+      PrintTest(pre_v[0].Data, len, "set profile velocity 1 : ");
+      PrintTest(pre_v[1].Data, len, "set profile velocity 2 : ");
 
       delete [] pre_v;
 
@@ -207,15 +217,15 @@ bool MobileMotor::SetMode() {
       break;
     }
     case VELOCITY_MODE: {
-      int len =
-          sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
+      int len = sizeof(cmd.SET_MODE_VELOCITY) / 
+                sizeof(cmd.SET_MODE_VELOCITY[0]);
       ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
       std::cout << "steering mode == velocity mode" << std::endl;
       break;
     }  
     case CURRENT_MODE: {
-      int len =
-          sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
+      int len = sizeof(cmd.SET_MODE_CURRENT) / 
+                sizeof(cmd.SET_MODE_CURRENT[0]);
       ModeCommand(cob_id[2], cob_id[3], len, CURRENT_MODE);
       std::cout << "steering mode == current mode" << std::endl;
       break;
@@ -272,24 +282,31 @@ void MobileMotor::ModeCommand(const int& id_0, const int& id_1,
 
 
 bool MobileMotor::EnableMotor() {
+  // number of enable commands
   int ena_cmd_num = 3;
   PVCI_CAN_OBJ obj = GetVciObject(id_num*ena_cmd_num);
   int index = 1;
 
   for (size_t i = 0; i < id_num; i++) {
-    obj[i * 3].ID = obj[i].ID + i + 1;
-    obj[i * 3].DataLen =
-        sizeof(cmd.ENABLE_COMMAND_1) / sizeof(cmd.ENABLE_COMMAND_1[0]);
-    DataInitial(obj[i * 3].Data, cmd.ENABLE_COMMAND_1, obj[i * 3].DataLen);
+    obj[i * 3].ID = obj[i * 3].ID + i + 1;
+    obj[i * 3].DataLen = sizeof(cmd.ENABLE_COMMAND_1) / 
+                         sizeof(cmd.ENABLE_COMMAND_1[0]);
+    DataInitial(obj[i * 3].Data, 
+                cmd.ENABLE_COMMAND_1, 
+                obj[i * 3].DataLen);
+
     obj[i * 3 + 1].ID = obj[i * 3 + 1].ID + i + 1;
-    obj[i * 3 + 1].DataLen =
-        sizeof(cmd.ENABLE_COMMAND_2) / sizeof(cmd.ENABLE_COMMAND_2[0]);
-    DataInitial(obj[i * 3 + 1].Data, cmd.ENABLE_COMMAND_2,
+    obj[i * 3 + 1].DataLen = sizeof(cmd.ENABLE_COMMAND_2) / 
+                             sizeof(cmd.ENABLE_COMMAND_2[0]);
+    DataInitial(obj[i * 3 + 1].Data, 
+                cmd.ENABLE_COMMAND_2, 
                 obj[i * 3 + 1].DataLen);
+
     obj[i * 3 + 2].ID = obj[i * 3 + 2].ID + i + 1;
-    obj[i * 3 + 2].DataLen =
-        sizeof(cmd.ENABLE_COMMAND_3) / sizeof(cmd.ENABLE_COMMAND_3[0]);
-    DataInitial(obj[i * 3 + 2].Data, cmd.ENABLE_COMMAND_3,
+    obj[i * 3 + 2].DataLen = sizeof(cmd.ENABLE_COMMAND_3) / 
+                             sizeof(cmd.ENABLE_COMMAND_3[0]);
+    DataInitial(obj[i * 3 + 2].Data, 
+                cmd.ENABLE_COMMAND_3,
                 obj[i * 3 + 2].DataLen);
   }
 
@@ -304,27 +321,27 @@ bool MobileMotor::EnableMotor() {
 }
 
 void MobileMotor::DataInitial(BYTE* data, uint8_t* cmd, const uint& len) {
-  std::cout << "initial data : ";
+  // std::cout << "initial data : ";
   for (size_t i = 0; i < len; i++) {
     data[i] = cmd[i];
-    std::cout << std::hex << (int)cmd[i] << "  ";
+    // std::cout << std::hex << (int)cmd[i] << "  ";
   }
-  std::cout << std::endl;
+  // std::cout << std::endl;
 }
 
 VCI_CAN_OBJ* MobileMotor::GetVciObject(const int& obj_num) {
 
-  PVCI_CAN_OBJ obj;
-  obj = new _VCI_CAN_OBJ[obj_num];
+  PVCI_CAN_OBJ obj_ptr;
+  obj_ptr = new VCI_CAN_OBJ[obj_num];
   for (size_t i = 0; i < obj_num; i++) {
-    obj[i].ID = 0x00000600;
-    obj[i].RemoteFlag = 0;
-    obj[i].SendType = 0;
-    obj[i].RemoteFlag = 0;
-    obj[i].ExternFlag = 0;
+    obj_ptr[i].ID = 0x00000600;
+    obj_ptr[i].RemoteFlag = 0;
+    obj_ptr[i].SendType = 0;
+    obj_ptr[i].RemoteFlag = 0;
+    obj_ptr[i].ExternFlag = 0;
   }
 
-  return obj;
+  return obj_ptr;
  
 }
 
@@ -433,40 +450,77 @@ void MobileMotor::TeleopCallback(const geometry_msgs::Twist& twist) {
 }
 
 void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
-  // if (!if_initial) {
-  //   ROS_WARN("feedback failure caused by initialization failure");
-  //   return ;
-  // }
+  if (!if_initial) {
+    ROS_WARN("feedback failure caused by initialization failure");
+    return ;
+  }
 
-  // uint buffer_size;
-  // buffer_size = VCI_GetReceiveNum(device_type, device_index, can_index);
-  // if (0 == buffer_size) {
-  //   ROS_WARN("no data in buffer!!");
-  //   return ;
-  // }
+  uint buffer_size;
+  buffer_size = VCI_GetReceiveNum(device_type, device_index, can_index);
+  if (0 == buffer_size) {
+    ROS_WARN("no data in buffer!!");
+    return ;
+  }
   
-  // PVCI_CAN_OBJ obj;
-  // uint rec_num = 
-  //   VCI_Receive(device_type, device_index, can_index, obj, buffer_size, wait_time);
-  // if (0xffffffff == rec_num) {
-  //   ROS_WARN("CAN reading error");
-  //   return ;
-  // }
-  // for (size_t i = 0; i < buffer_size; i++) {
-  //   if ((REC_BASE_ID + cob_id[0]) == obj[i].ID) {
-
-  //   }
-  //   if ((REC_BASE_ID + cob_id[1]) == obj[i].ID) {
-
-  //   }
-  //   if ((REC_BASE_ID + cob_id[2]) == obj[i].ID) {
-
-  //   }
-  //   if ((REC_BASE_ID + cob_id[3]) == obj[i].ID) {
-
-  //   }
-  // }
+  FeedbackReq();
   
+  PVCI_CAN_OBJ obj;
+  uint rec_num = VCI_Receive(device_type, device_index, can_index, 
+                             obj, buffer_size, wait_time);
+  if (0xffffffff == rec_num) {
+    ROS_WARN("CAN reading error");
+    return ;
+  }
+  for (size_t i = 0; i < buffer_size; i++) {
+    if ((REC_BASE_ID + cob_id[0]) == obj[i].ID) {
+
+    }
+    if ((REC_BASE_ID + cob_id[1]) == obj[i].ID) {
+
+    }
+    if ((REC_BASE_ID + cob_id[2]) == obj[i].ID) {
+
+    }
+    if ((REC_BASE_ID + cob_id[3]) == obj[i].ID) {
+
+    }
+  }
+  
+}
+
+void MobileMotor::FeedbackReq() {
+  PVCI_CAN_OBJ obj = GetVciObject(id_num*4);
+  for (size_t i = 0; i < id_num; i++) {
+    int len;
+
+    len = sizeof(cmd.BASE_POSITION_FEEDBACK) /
+          sizeof(cmd.BASE_POSITION_FEEDBACK[0]);
+    obj[i * 4 + 0].ID += cob_id[i];
+    obj[i * 4 + 0].DataLen = len;
+    DataInitial(obj[i * 4 + 0].Data, cmd.BASE_POSITION_FEEDBACK, len);
+    obj[i * 4 + 0].Data[2] = LEFT_MOTOR;
+
+    obj[i * 4 + 1].ID += cob_id[i];
+    obj[i * 4 + 1].DataLen = len;
+    DataInitial(obj[i * 4 + 1].Data, cmd.BASE_POSITION_FEEDBACK, len);
+    obj[i * 4 + 1].Data[2] = RIGHT_MOTOR;
+
+    len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
+          sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
+    obj[i * 4 + 2].ID += cob_id[i];
+    obj[i * 4 + 2].DataLen = len;
+    DataInitial(obj[i * 4 + 2].Data, cmd.BASE_VELOCITY_FEEDBACK, len);
+    obj[i * 4 + 2].Data[2] = LEFT_MOTOR;
+
+    obj[i * 4 + 3].ID += cob_id[i];
+    obj[i * 4 + 3].DataLen = len;
+    DataInitial(obj[i * 4 + 3].Data, cmd.BASE_VELOCITY_FEEDBACK, len);
+    obj[i * 4 + 3].Data[2] = RIGHT_MOTOR;
+  }  
+
+  SendCommand(obj, id_num*4);
+
+  delete [] obj;
 }
 
 void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
@@ -478,7 +532,7 @@ void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
   // 4->left, 5->right for steering driver 1 front
   // 6->left. 7->right for steering driver 2 rear
   int obj_num = 8;
-  PVCI_CAN_OBJ obj = new VCI_CAN_OBJ[obj_num];
+  PVCI_CAN_OBJ obj = GetVciObject(obj_num);
 
   switch (walking_mode) {
     case POSITION_MODE: {
@@ -493,7 +547,7 @@ void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
       obj[3].ID += cob_id[1];
 
       int len = sizeof(cmd.BASE_VELOCITY_COMMAND) / 
-                sizeof(cmd.BASE_VELOCITY_COMMAND);
+                sizeof(cmd.BASE_VELOCITY_COMMAND[0]);
       obj[0].DataLen = 
       obj[1].DataLen = 
       obj[2].DataLen = 
@@ -585,7 +639,8 @@ void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
 
   // send command to disenable the drivers
   PVCI_CAN_OBJ obj = GetVciObject(id_num);
-  len = sizeof(cmd.DISENABLE_COMMAND) / sizeof(cmd.DISENABLE_COMMAND[0]);
+  len = sizeof(cmd.DISENABLE_COMMAND) / 
+        sizeof(cmd.DISENABLE_COMMAND[0]);
   for (size_t i = 0; i < id_num; i++) {
     obj[i].ID = obj[i].ID + i + 1;
     obj[i].ExternFlag = 0;
@@ -600,7 +655,8 @@ void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
 
   // send command to save the current state of drivers and motors
   obj = GetVciObject(id_num);  
-  len = sizeof(cmd.SAVE_PARAMETERS) / sizeof(cmd.SAVE_PARAMETERS[0]);
+  len = sizeof(cmd.SAVE_PARAMETERS) / 
+        sizeof(cmd.SAVE_PARAMETERS[0]);
   for (size_t i = 0; i < id_num; i++) {
     obj[i].ID = obj[i].ID + i + 1;
     obj[i].ExternFlag = 0;

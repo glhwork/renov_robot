@@ -66,14 +66,6 @@ target_link_libraries(motor_core
   ${catkin_LIBRARIES} 
 )
 
-add_executable(test_node
-  src/test.cpp
-)
-target_link_libraries(test_node
-  controlcan
-  ${catkin_LIBRARIES}
-)
-
 add_executable(abs_encoder
   src/abs_encoder.cpp
 )
@@ -92,5 +84,12 @@ add_executable(send_test
   src/send_test.cpp  
 )
 target_link_libraries(send_test
+  ${catkin_LIBRARIES}
+)
+
+add_executable(limit_switch
+  src/limit_switch.cpp
+)
+target_link_libraries(limit_switch
   ${catkin_LIBRARIES}
 )

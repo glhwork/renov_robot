@@ -20,6 +20,10 @@
 
 #define PI 3.141592653
 
+/* code refactoring !!!! */
+
+
+
 namespace mobile {
 
 struct IdConfig {
@@ -56,6 +60,7 @@ class MobileMotor {
   void StopCallback(const std_msgs::Bool& stop);
   void ControlMotor(const std::vector<float>& raw_state);
    
+  void FeedbackReq();
   std::vector<int> CommandTransform(const std::vector<float>& raw_state);
   void PrintTest(BYTE* data, const int& len, const std::string& str);
 
