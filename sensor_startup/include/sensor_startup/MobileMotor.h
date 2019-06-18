@@ -2,6 +2,7 @@
 #define MOBILEMOTOR_H
 
 #include <iostream>
+#include <cmath>
 #include <string>
 #include <vector>
 #include <sstream>

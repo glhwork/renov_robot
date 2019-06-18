@@ -67,23 +67,30 @@ target_link_libraries(motor_core
 )
 
 add_executable(abs_encoder
-  src/abs_encoder.cpp
+  src/test/abs_encoder.cpp
 )
 target_link_libraries(abs_encoder
   ${catkin_LIBRARIES}
 )
 
 add_executable(stop_motor
-  src/stop_motor.cpp
+  src/test/stop_motor.cpp
 )
 target_link_libraries(stop_motor
   ${catkin_LIBRARIES}
 )
 
 add_executable(send_test
-  src/send_test.cpp  
+  src/test/send_test.cpp  
 )
 target_link_libraries(send_test
+  ${catkin_LIBRARIES}
+)
+
+add_executable(walking_demo
+  src/test/walking_demo
+)
+target_link_libraries(walking_demo
   ${catkin_LIBRARIES}
 )
 
