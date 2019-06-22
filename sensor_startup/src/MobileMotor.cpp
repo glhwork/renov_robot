@@ -7,7 +7,7 @@ MobileMotor::MobileMotor() {
   ParamInit();
   ReadFile(file_address);
   Setup();
-  if_initial = CanBusInit();
+  if_initial = DriverInit();
 }
 
 MobileMotor::~MobileMotor() {
@@ -38,15 +38,15 @@ void MobileMotor::ParamInit() {
 
 void MobileMotor::ReadFile(const std::string& address) {
   std::cout << " address is : " << address << std::endl;
-  YAML::Node param = YAML::LoadFile(address);
+  param = YAML::LoadFile(address);
 
   device_type = param["device_type"].as<int>();
   device_index = param["device_index"].as<int>();
   can_index = param["can_index"].as<int>();
   id_num = param["id_num"].as<int>();
   
-  steering_mode = param["steering_mode"].as<int>();
-  walking_mode = param["walking_mode"].as<int>();
+  //steering_mode = param["steering_mode"].as<int>();
+  //walking_mode = param["walking_mode"].as<int>();
 
   encoder_s = (uint)param["encoder_s"].as<int>();
   encoder_w = (uint)param["encoder_w"].as<int>();
@@ -65,11 +65,13 @@ void MobileMotor::ReadFile(const std::string& address) {
   motor_sign[5] = param["motor_sign"]["fsr"].as<int>();
   motor_sign[6] = param["motor_sign"]["rsl"].as<int>();
   motor_sign[7] = param["motor_sign"]["rsr"].as<int>();
-  
-  home[0] = param["homing"]["fl"].as<int>();
-  home[1] = param["homing"]["fr"].as<int>();
-  home[2] = param["homing"]["rl"].as<int>();
-  home[3] = param["homing"]["rr"].as<int>();
+
+  abs_home[0] = param["homing"]["fl"].as<int>();
+  abs_home[1] = param["homing"]["fr"].as<int>();
+  abs_home[2] = param["homing"]["rl"].as<int>();
+  abs_home[3] = param["homing"]["rr"].as<int>();
+
+  error_limit = param["homing_error_limit"].as<int>();
 
   reduc_ratio_s = param["reduc_ratio_s"].as<double>();
   reduc_ratio_w = param["reduc_ratio_w"].as<double>();
@@ -81,7 +83,7 @@ void MobileMotor::Setup() {
   state_pub = nh.advertise<sensor_msgs::JointState>(state_topic, 100);
 }
 
-bool MobileMotor::CanBusInit() {
+bool MobileMotor::DriverInit() {
 
   int flag;
   flag = VCI_OpenDevice(device_type, device_index, 0);
@@ -116,6 +118,10 @@ bool MobileMotor::CanBusInit() {
     std::cout << "start successfully" << std::endl;
   }
 
+  Homing();
+
+  steering_mode = param["steering_mode"].as<int>();
+  walking_mode = param["walking_mode"].as<int>();
   if (!SetMode()) {
     ROS_WARN("set mode failure!!");
     return false;
@@ -597,8 +603,27 @@ void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
       break;
     }
     case VELOCITY_MODE: {
-      std::cout << "velocity mode for steering is under developing"
-                << std::endl;
+      obj[4].ID += cob_id[2];
+      obj[5].ID += cob_id[2];
+      obj[6].ID += cob_id[3];
+      obj[7].ID += cob_id[3];
+
+      int len = sizeof(cmd.BASE_VELOCITY_COMMAND) /
+                sizeof(cmd.BASE_VELOCITY_COMMAND[0]);
+      obj[4].DataLen = 
+      obj[5].DataLen = 
+      obj[6].DataLen = 
+      obj[7].DataLen = len;
+
+      DataTransform(obj[4].Data, cmd.BASE_VELOCITY_COMMAND, len, 
+                    LEFT_MOTOR, state[4]);
+      DataTransform(obj[5].Data, cmd.BASE_VELOCITY_COMMAND, len, 
+                    RIGHT_MOTOR, state[5]);
+      DataTransform(obj[6].Data, cmd.BASE_VELOCITY_COMMAND, len, 
+                    LEFT_MOTOR, state[6]);
+      DataTransform(obj[7].Data, cmd.BASE_VELOCITY_COMMAND, len, 
+                    RIGHT_MOTOR, state[7]);
+
       break;
     }
     case CURRENT_MODE: {
@@ -682,4 +707,52 @@ void MobileMotor::PrintTest(BYTE* data, const int& len, const std::string& str) 
     std::cout << std::hex << "0x" << (int)data[i] << " "; 
   }
   std::cout << std::endl;
+}
+
+/* apply encoders to help process homing */
+
+void MobileMotor::AbsEncodInit() {
+
+}
+
+std::vector<int> MobileMotor::ReadEncoder() {
+
+}
+
+void MobileMotor::Homing() {
+  AbsEncodInit();
+  int len = sizeof(cmd.SET_MODE_VELOCITY) /
+            sizeof(cmd.SET_MODE_VELOCITY[0]);
+  ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
+
+  std::vector<int> encod_data;
+  while (true) {
+    encod_data = ReadEncoder();
+    int error[4];
+    float steer_v[4];
+    /********* k_p is undefined ********/
+    double k_p;
+
+    for (size_t i = 0; i < 4; i++) {
+      error[i] = encod_data[i] - abs_home[i];
+      if (abs(error[i]) < error_limit) {
+        steer_v[i] = 0.0;
+      } else {
+        steer_v[i] = (float)(k_p * error[i]); 
+      }
+    }
+    if (steer_v[0] == 0.0 && steer_v[1] == 0.0 && 
+        steer_v[2] == 0.0 && steer_v[3] == 0.0) {
+      ROS_INFO("homing finish !!");
+      break;
+    }
+  
+    walking_mode = VELOCITY_MODE;
+    steering_mode = VELOCITY_MODE;
+
+    std::vector<float> raw_state;
+    raw_state.resize(8);
+    raw_state = {0, 0, 0, 0, steer_v[0], steer_v[0], steer_v[0], steer_v[0]};
+    ControlMotor(raw_state);
+  }
 }

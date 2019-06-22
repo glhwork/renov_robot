@@ -41,7 +41,7 @@ class MobileMotor {
   void ParamInit();
   void ReadFile(const std::string& address);
   void Setup();
-  bool CanBusInit();
+  bool DriverInit();
   bool SetMode();
   bool EnableMotor();
   void ModeCommand(const int& id_0, const int& id_1, 
@@ -64,6 +64,11 @@ class MobileMotor {
   void FeedbackReq();
   std::vector<int> CommandTransform(const std::vector<float>& raw_state);
   void PrintTest(BYTE* data, const int& len, const std::string& str);
+
+  void AbsEncodInit();
+  std::vector<int> ReadEncoder();
+  void Homing();
+
 
  protected:
   // COBID of multiple motor drivers
@@ -90,6 +95,7 @@ class MobileMotor {
  
 
   /* CONFIG PARAMETERS */
+  YAML::Node param;
   // this CAN device has two can channels
   // device type of CAN-Analyst, refer to controlcan.h
   int device_type;
@@ -116,6 +122,10 @@ class MobileMotor {
   int motor_sign[8];
   // homing position
   int home[4];
+  // homing value of absolute encoder
+  int abs_home[4];
+  // error limit to judge whether steering motor finishes homing
+  int error_limit;
 
   
   /* GLOBAL VARIABLES */
@@ -130,6 +140,6 @@ class MobileMotor {
 
 };  // class MobileMotor
 
-} // namespace mobile
+}  // namespace mobile
 
 #endif

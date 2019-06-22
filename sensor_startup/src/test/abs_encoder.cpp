@@ -14,10 +14,6 @@
 typedef uint8_t _u8;
 typedef uint16_t _u16;
 _u8 cmd[8] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x0b};
-_u8 SET_ADDRESS_1[8] = {0x01, 0x06, 0x00, 0x04, 0x00, 0x01, 0x09, 0xcb};
-_u8 SET_ADDRESS_2[8] = {0x01, 0x06, 0x00, 0x04, 0x00, 0x02, 0x49, 0xca};
-_u8 SET_ADDRESS_3[8] = {0x01, 0x06, 0x00, 0x04, 0x00, 0x03, 0x88, 0x0a};
-_u8 SET_ADDRESS_4[8] = {0x01, 0x06, 0x00, 0x04, 0x00, 0x04, 0xc9, 0xc8};
 
 _u8 REQUEST_DATA_1[8] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x0b};
 _u8 REQUEST_DATA_2[8] = {0x02, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x38};
@@ -61,7 +57,6 @@ int main(int argc, char** argv) {
 
   InitSerial(port, baudrate);
   if (encod_ser.isOpen()) {
-    SetAddress();
     while(ros::ok()) {
       ReadEncoder();
       ros::spinOnce();
@@ -87,20 +82,6 @@ void InitSerial(const std::string& port_id, const int& baudrate) {
     return ;
   }
 
-}
-
-void SetAddress() {
-
-  encod_ser.write(SET_ADDRESS_1, 8);
-  usleep(100);
-  encod_ser.write(SET_ADDRESS_2, 8);
-  usleep(100);
-  encod_ser.write(SET_ADDRESS_3, 8);
-  usleep(100);
-  encod_ser.write(SET_ADDRESS_4, 8);
-  usleep(100);
-
-  ROS_INFO("set address finish");
 }
 
 void ReadEncoder() {

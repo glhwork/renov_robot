@@ -41,3 +41,4 @@ homing:
   rl: 100  # corresponding impulse of steering motor (rear left)
   rr: 100  # corresponding impulse of steering motor (rear right)
 
+homing_error_limit: 100
