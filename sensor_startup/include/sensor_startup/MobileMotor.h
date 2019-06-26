@@ -66,7 +66,7 @@ class MobileMotor {
   void PrintTest(BYTE* data, const int& len, const std::string& str);
 
   void AbsEncodInit();
-  std::vector<int> ReadEncoder();
+  int ReadEncoder(int* encod_data);
   void Homing();
 
 

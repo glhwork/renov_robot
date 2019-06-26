@@ -70,6 +70,7 @@ add_executable(abs_encoder
   src/test/abs_encoder.cpp
 )
 target_link_libraries(abs_encoder
+  controlcan
   ${catkin_LIBRARIES}
 )
 

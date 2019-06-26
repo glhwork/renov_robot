@@ -712,10 +712,82 @@ void MobileMotor::PrintTest(BYTE* data, const int& len, const std::string& str) 
 /* apply encoders to help process homing */
 
 void MobileMotor::AbsEncodInit() {
-
 }
 
-std::vector<int> MobileMotor::ReadEncoder() {
+int MobileMotor::ReadEncoder(int* encod_data) {
+  PVCI_CAN_OBJ obj = GetVciObject(4);
+  int len = sizeof(cmd.REQUEST_ENCODER_1) /
+            sizeof(cmd.REQUEST_ENCODER_1[0]);
+  for (size_t i = 0; i < 4; i++) {
+    obj[i].ID = i + 1;
+    obj[i].DataLen = len;
+  }
+  DataInitial(obj[0].Data, cmd.REQUEST_ENCODER_1, len);
+  DataInitial(obj[1].Data, cmd.REQUEST_ENCODER_2, len);
+  DataInitial(obj[2].Data, cmd.REQUEST_ENCODER_3, len);
+  DataInitial(obj[3].Data, cmd.REQUEST_ENCODER_4, len);
+
+  SendCommand(obj, 4);
+  delete [] obj;
+
+  int data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
+  if (-1 == data_num) {
+    ROS_WARN("Get quantity of CAN data of absolute encoder failure");
+    return 0;
+  }
+
+  PVCI_CAN_OBJ rec_obj;
+  // std::vector<int> encod_data;
+  int encod_count;  // this is for checking whether enough data is obtained
+
+  int rec_num
+    = VCI_Receive(device_type, device_index, can_index, rec_obj, data_num, 0);
+  if (-1 == rec_num) {
+    ROS_WARN("Get data of absolute encoder from CAN failure");
+    return 0;
+  } else if (0 != rec_num) {
+    for (size_t i = 0; i < rec_num; i++) {
+      switch (rec_obj[i].ID) {
+        case 0x00000001: {
+          encod_data[0] = (rec_obj[i].Data[6] << 24) +
+                          (rec_obj[i].Data[5] << 16) +
+                          (rec_obj[i].Data[4] <<  8) +
+                          (rec_obj[i].Data[3] <<  0);
+          encod_count++;
+        }
+        case 0x00000002: {
+          encod_data[1] = (rec_obj[i].Data[6] << 24) +
+                          (rec_obj[i].Data[5] << 16) +
+                          (rec_obj[i].Data[4] <<  8) + 
+                          (rec_obj[i].Data[3] <<  0);
+          encod_count++;
+        }
+        case 0x00000003: {
+          encod_data[2] = (rec_obj[i].Data[6] << 24) +
+                          (rec_obj[i].Data[5] << 16) +
+                          (rec_obj[i].Data[4] <<  8) + 
+                          (rec_obj[i].Data[3] <<  0);
+          encod_count++;
+        }
+        case 0x00000004: {
+          encod_data[3] = (rec_obj[i].Data[6] << 24) +
+                          (rec_obj[i].Data[5] << 16) +
+                          (rec_obj[i].Data[4] <<  8) + 
+                          (rec_obj[i].Data[3] <<  0);
+          encod_count++;
+        }
+        default: { 
+          break; 
+        }
+      }
+    }
+    return encod_count;
+
+  }
+
+
+
+
 
 }
 
@@ -725,9 +797,14 @@ void MobileMotor::Homing() {
             sizeof(cmd.SET_MODE_VELOCITY[0]);
   ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
 
-  std::vector<int> encod_data;
+  int* encod_data = new int;
   while (true) {
-    encod_data = ReadEncoder();
+    int data_len = ReadEncoder(encod_data);
+    if (4 != data_len) {
+      ROS_WARN("number of encoder data is incorrect");
+      delete encod_data;
+      return ;
+    }
     int error[4];
     float steer_v[4];
     /********* k_p is undefined ********/
@@ -741,6 +818,7 @@ void MobileMotor::Homing() {
         steer_v[i] = (float)(k_p * error[i]); 
       }
     }
+
     if (steer_v[0] == 0.0 && steer_v[1] == 0.0 && 
         steer_v[2] == 0.0 && steer_v[3] == 0.0) {
       ROS_INFO("homing finish !!");
@@ -755,4 +833,5 @@ void MobileMotor::Homing() {
     raw_state = {0, 0, 0, 0, steer_v[0], steer_v[0], steer_v[0], steer_v[0]};
     ControlMotor(raw_state);
   }
+  delete encod_data;
 }
