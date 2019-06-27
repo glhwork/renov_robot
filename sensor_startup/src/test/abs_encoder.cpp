@@ -196,24 +196,28 @@ void ReadLoop() {
                           (rec_obj[i].Data[5] << 16) +
                           (rec_obj[i].Data[4] << 8) + (rec_obj[i].Data[3] << 0);
           encod_count++;
+          break;
         }
         case 0x00000002: {
           encod_data[1] = (rec_obj[i].Data[6] << 24) +
                           (rec_obj[i].Data[5] << 16) +
                           (rec_obj[i].Data[4] << 8) + (rec_obj[i].Data[3] << 0);
           encod_count++;
+          break;
         }
         case 0x00000003: {
           encod_data[2] = (rec_obj[i].Data[6] << 24) +
                           (rec_obj[i].Data[5] << 16) +
                           (rec_obj[i].Data[4] << 8) + (rec_obj[i].Data[3] << 0);
           encod_count++;
+          break;
         }
         case 0x00000004: {
           encod_data[3] = (rec_obj[i].Data[6] << 24) +
                           (rec_obj[i].Data[5] << 16) +
                           (rec_obj[i].Data[4] << 8) + (rec_obj[i].Data[3] << 0);
           encod_count++;
+          break;
         }
         default: { break; }
       }

@@ -65,6 +65,7 @@ class MobileMotor {
   std::vector<int> CommandTransform(const std::vector<float>& raw_state);
   void PrintTest(BYTE* data, const int& len, const std::string& str);
 
+  int  FourByteHex2Int(uint8_t* data);
   void AbsEncodInit();
   int ReadEncoder(int* encod_data);
   void Homing();
