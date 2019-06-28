@@ -66,8 +66,7 @@ class MobileMotor {
   void PrintTest(BYTE* data, const int& len, const std::string& str);
 
   int  FourByteHex2Int(uint8_t* data);
-  void AbsEncodInit();
-  int ReadEncoder(int* encod_data);
+  bool ReadEncoder(int* encod_data);
   void Homing();
 
 

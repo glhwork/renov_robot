@@ -717,10 +717,8 @@ int MobileMotor::FourByteHex2Int(uint8_t* data) {
   return result;
 }
 
-void MobileMotor::AbsEncodInit() {
-}
 
-int MobileMotor::ReadEncoder(int* encod_data) {
+bool MobileMotor::ReadEncoder(int* encod_data) {
   PVCI_CAN_OBJ obj = GetVciObject(4);
   int len = sizeof(cmd.REQUEST_ENCODER_1) /
             sizeof(cmd.REQUEST_ENCODER_1[0]);
@@ -739,7 +737,7 @@ int MobileMotor::ReadEncoder(int* encod_data) {
   int data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
   if (-1 == data_num) {
     ROS_WARN("Get quantity of CAN data of absolute encoder failure");
-    return 0;
+    return false;
   }
 
   PVCI_CAN_OBJ rec_obj;
@@ -750,28 +748,29 @@ int MobileMotor::ReadEncoder(int* encod_data) {
     = VCI_Receive(device_type, device_index, can_index, rec_obj, data_num, 0);
   if (-1 == rec_num) {
     ROS_WARN("Get data of absolute encoder from CAN failure");
-    return 0;
+    return false;
   } else if (0 != rec_num) {
+    bool flag_vec[4] = {false, false, false, false};
     for (size_t i = 0; i < rec_num; i++) {
       switch (rec_obj[i].ID) {
         case 0x00000001: {
           encod_data[0] = FourByteHex2Int(&rec_obj[i].Data[3]); 
-          encod_count++;
+          flag_vec[0] = true;
           break;
         }
         case 0x00000002: {
           encod_data[1] = FourByteHex2Int(&rec_obj[i].Data[3]); 
-          encod_count++;
+          flag_vec[1] = true;
           break;
         }
         case 0x00000003: {
           encod_data[2] = FourByteHex2Int(&rec_obj[i].Data[3]);
-          encod_count++;
+          flag_vec[2] = true;
           break;
         }
         case 0x00000004: {
           encod_data[3] = FourByteHex2Int(&rec_obj[i].Data[3]);
-          encod_count++;
+          flag_vec[3] = true;
           break;
         }
         default: { 
@@ -779,9 +778,13 @@ int MobileMotor::ReadEncoder(int* encod_data) {
         }
       }
     }
-    ROS_INFO("ENCODER DATA is : 1: %d, 2: %d, 3: %d, 4: %d", 
-             encod_data[0], encod_data[1], encod_data[2], encod_data[3]);
-    return encod_count;
+
+    bool flag = (flag_vec[0] && flag_vec[1] && flag_vec[2] && flag_vec[3]);
+    if (flag) {
+      ROS_INFO("ENCODER DATA is : 1: %d, 2: %d, 3: %d, 4: %d", 
+               encod_data[0], encod_data[1], encod_data[2], encod_data[3]);
+    }
+    return flag;
 
   }
 
@@ -792,19 +795,18 @@ int MobileMotor::ReadEncoder(int* encod_data) {
 }
 
 void MobileMotor::Homing() {
-  AbsEncodInit();
   int len = sizeof(cmd.SET_MODE_VELOCITY) /
             sizeof(cmd.SET_MODE_VELOCITY[0]);
   ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
 
   int* encod_data = new int;
   while (true) {
-    //  data_len : the length of pointer array - encod_data
-    int data_len = ReadEncoder(encod_data);
-    if (4 != data_len) {
-      ROS_WARN("number of encoder data is incorrect");
-      delete encod_data;
-      return ;
+    // loop used to continuously read 
+    // until data of four encoders are got
+    while (true) {
+      if (ReadEncoder(encod_data)) {
+        break;
+      }
     }
     int error[4];
     float steer_v[4];
@@ -871,7 +873,7 @@ void MobileMotor::Homing() {
             home[1] = FourByteHex2Int(&obj[i].Data[4]);
             flag[1] = true;
           }
-        }  // end of if obtaining data of front sterring motors
+        }  // end of [if] obtaining data of front sterring motors
         if (0x00000600 + cob_id[3] == obj[i].ID) {
           // rear left motor position
           if (0x64 == obj[i].Data[1] && LEFT_MOTOR == obj[i].Data[2]) {
@@ -883,14 +885,15 @@ void MobileMotor::Homing() {
             home[3] = FourByteHex2Int(&obj[i].Data[4]);
             flag[3] = true;
           }
-        }  //  end of if obtaining data of rear steering motors
+        }  //  end of [if] obtaining data of rear steering motors
         
 
-      }  // end of loop obtaining data of sterring motors
+      }  // end of [for] loop obtaining data of sterring motors
       if (flag[0] && flag[1] && flag[2] && flag[3]) {
         ROS_INFO("Get home position successfully");
+        sleep(2);
         break;
       }
     }
-  }  // end of while loop reading position of motors 
+  }  // end of [while] loop reading position of motors 
 }
