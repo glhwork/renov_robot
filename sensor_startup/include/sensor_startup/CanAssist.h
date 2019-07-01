@@ -2,13 +2,17 @@
 #define CANASSIST_H
 
 /*
-  macro definition of normal can commands
+  macro definition of normal CAN commands
 */
 #include <iostream>
 
 #define POSITION_MODE 0x00
 #define VELOCITY_MODE 0x01
 #define CURRENT_MODE 0x02
+
+#define POSITION_FD 0x64
+#define VELOCITY_FD 0x69
+#define CURRENT_FD 0x77
 
 #define DATA_UINT8 0x2f
 #define DATA_UINT16 0x2b

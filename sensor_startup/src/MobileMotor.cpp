@@ -470,27 +470,75 @@ void MobileMotor::FeedbackCallback(const ros::TimerEvent&) {
     return ;
   }
   
-  PVCI_CAN_OBJ obj;
+  PVCI_CAN_OBJ rec_obj;
   uint rec_num = VCI_Receive(device_type, device_index, can_index, 
-                             obj, buffer_size, wait_time);
+                             rec_obj, buffer_size, wait_time);
   if (0xffffffff == rec_num) {
     ROS_WARN("CAN reading error");
     return ;
   }
+
+  sensor_msgs::JointState state;
+  state.header.frame_id = "motor";
+  state.header.stamp = ros::Time::now();
+  state.name.resize(8);
+  state.name = {"front_left_walking",   "front_right_walking",
+                "rear_left_walking",    "rear_right_walking",
+                "front_left_steering", "front_right_steering",
+                "rear_left_steering",  "rear_right_steering"};
+  state.position.resize(8);
+  state.velocity.resize(8);
+  state.velocity = {10000.0, 10000.0, 10000.0, 10000.0, 
+                    10000.0, 10000.0, 10000.0, 10000.0};
   for (size_t i = 0; i < buffer_size; i++) {
-    if ((REC_BASE_ID + cob_id[0]) == obj[i].ID) {
+    // if ((REC_BASE_ID + cob_id[0]) == rec_obj[i].ID) {
 
+    // }
+    // if ((REC_BASE_ID + cob_id[1]) == rec_obj[i].ID) {
+
+    // }
+    // if ((REC_BASE_ID + cob_id[2]) == rec_obj[i].ID) {
+
+    // }
+    // if ((REC_BASE_ID + cob_id[3]) == rec_obj[i].ID) {
+
+    // }
+    if (LEFT_MOTOR == rec_obj[i].Data[2]) {
+      if (POSITION_FD == rec_obj[i].Data[1]) {
+        int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
+        state.position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+        state.name[index] = state.name[index] + "_1";
+      }      
+      if (VELOCITY_FD == rec_obj[i].Data[1]) {
+        int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
+        state.velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+      }
     }
-    if ((REC_BASE_ID + cob_id[1]) == obj[i].ID) {
-
-    }
-    if ((REC_BASE_ID + cob_id[2]) == obj[i].ID) {
-
-    }
-    if ((REC_BASE_ID + cob_id[3]) == obj[i].ID) {
-
+    if (RIGHT_MOTOR == rec_obj[i].Data[2]) {
+      if (POSITION_FD == rec_obj[i].Data[1]) {
+        int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
+        state.position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+        state.name[index] = state.name[index] + "_1";
+      }
+      if (VELOCITY_FD == rec_obj[i].Data[1]) {
+        int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
+        state.velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+      }
     }
   }
+
+  for (size_t i = 0; i < state.velocity.size(); i++) {
+    if (10000.0 == state.velocity[i]) {
+      ROS_WARN("no enough velocity feedback!!");
+      return ;
+    }
+    if (state.name[i].find("_1") > state.name.size()) {
+      ROS_WARN("no enough position feedback!!");
+      return ;
+    }
+  }
+
+  state_pub.publish(state);
   
 }
 
@@ -714,6 +762,9 @@ int MobileMotor::FourByteHex2Int(uint8_t* data) {
   int result;
   result = (data[3] << 24) + (data[2] << 16) +
            (data[1] <<  8) + (data[0] <<  0);
+  if (0x80000000 && result) {
+    result = -1 * (~(result -1));
+  }
   return result;
 }
 
