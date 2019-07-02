@@ -10,11 +10,11 @@ walking_mode: 1
 
 encoder_s: 1024  # encoder line of steering motor
 encoder_w: 2500  # encoder line of walking motor
-reduc_ratio_s: 40  # reduction ratio of steering motor
+reduc_ratio_s: 890  # reduction ratio of steering motor
 reduc_ratio_w: 22.5  # reduction ratio of walking motor
 # profile velocity applied to limit maximum 
 # velocity especially for position mode
-max_velocity: 800  
+max_velocity: 1500  
 
 walking_channel:
   chn1: 1  # front walking wheels
@@ -26,9 +26,9 @@ steering_channel:
 
 
 motor_sign:
-  fwl: 0  # front walking left
+  fwl: 1  # front walking left
   fwr: 0  # front walking right
-  rwl: 0  # rear walking left
+  rwl: 1  # rear walking left
   rwr: 0  # rear walking right
   fsl: 0  # front steering left
   fsr: 0  # front steering right
@@ -36,9 +36,9 @@ motor_sign:
   rsr: 0  # rear steering right
 
 homing:
-  fl: 100  # corresponding impulse of steering motor (front left)
-  fr: 100  # corresponding impulse of steering motor (front right)
-  rl: 100  # corresponding impulse of steering motor (rear left)
-  rr: 100  # corresponding impulse of steering motor (rear right)
+  fl: 25078  # corresponding impulse of steering motor (front left)
+  fr: 27207  # corresponding impulse of steering motor (front right)
+  rl: 27996  # corresponding impulse of steering motor (rear left)
+  rr: 25750  # corresponding impulse of steering motor (rear right)
 
 homing_error_limit: 100
