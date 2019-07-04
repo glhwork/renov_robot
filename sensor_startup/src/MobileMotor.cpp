@@ -958,6 +958,25 @@ void MobileMotor::Homing() {
 
       }  // end of [for] loop obtaining data of sterring motors
       if (flag[0] && flag[1] && flag[2] && flag[3]) {
+        PVCI_CAN_OBJ posi_obj = GetVciObject(4);
+        posi_obj[0].ID += cob_id[2];
+        posi_obj[1].ID += cob_id[2];
+        posi_obj[2].ID += cob_id[3];
+        posi_obj[3].ID += cob_id[3];
+
+        int len = sizeof(cmd.BASE_POSITION_COMMAND) / 
+                  sizeof(cmd.BASE_POSITION_COMMAND[0]);
+        DataTransform(posi_obj[0].Data, cmd.BASE_POSITION_COMMAND, 
+                      len, LEFT_MOTOR, home[0]);
+        DataTransform(posi_obj[1].Data, cmd.BASE_POSITION_COMMAND,
+                      len, RIGHT_MOTOR, home[1]);
+        DataTransform(posi_obj[2].Data, cmd.BASE_POSITION_COMMAND,
+                      len, LEFT_MOTOR, home[2]);
+        DataTransform(posi_obj[3].Data, cmd.BASE_POSITION_COMMAND,
+                      len, RIGHT_MOTOR, home[3]);
+        SendCommand(posi_obj, 4);
+
+        delete [] posi_obj;
         delete [] rec_obj;
         ROS_INFO("Get home position successfully");
         sleep(2);
