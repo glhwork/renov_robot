@@ -12,9 +12,10 @@ class Tele : public MobileMotor {
       ReadTeleopFile(); 
     }
     virtual ~Tele() {}
-    void SetTeleopMode();
+    // void SetTeleopMode();
     void ReadTeleopFile();
     void TeleControl(const geometry_msgs::Twist::ConstPtr& twist);
+    void TeleStop(const std_msgs::Bool& data);
 
   private:
     double wheel_dis_len;
@@ -63,18 +64,57 @@ void Tele::TeleControl(const geometry_msgs::Twist::ConstPtr& twist) {
 
     float alpha = fabs(atan(wheel_dis_len / wheel_dis_wid));
     std::vector<float> velocity;
-    float v_linear = az * r;
+    float v_linear = az * r / (float)0.15;
     velocity.resize(8);
     velocity = {-v_linear, v_linear, -v_linear, v_linear,
                    -alpha,    alpha,     alpha,   -alpha};
     ControlMotor(velocity);
-
+  } else if (0 == vx && 0 == az) {
+    std::vector<float> velocity;
+    velocity.resize(8);
+    velocity = {0, 0, 0, 0, 0, 0, 0, 0};
+    ControlMotor(velocity);
   }
 }
 
+void Tele::TeleStop(const std_msgs::Bool& stop) {
+  int len;
 
+  // send command to disenable the drivers
+  PVCI_CAN_OBJ obj = GetVciObject(id_num);
+  len = sizeof(cmd.DISENABLE_COMMAND) / sizeof(cmd.DISENABLE_COMMAND[0]);
+  for (size_t i = 0; i < id_num; i++) {
+    obj[i].ID = obj[i].ID + i + 1;
+    obj[i].ExternFlag = 0;
+    obj[i].RemoteFlag = 0;
+    obj[i].SendType = 0;
+    obj[i].DataLen = len;
+    DataInitial(obj[i].Data, cmd.DISENABLE_COMMAND, len);
+  }
+  PrintTest(obj[0].Data, len, "disenable process : ");
+  SendCommand(obj, id_num);
+  delete [] obj;
 
-
+  // send command to save the current state of drivers and motors
+  obj = GetVciObject(id_num);
+  len = sizeof(cmd.SAVE_PARAMETERS) / sizeof(cmd.SAVE_PARAMETERS[0]);
+  for (size_t i = 0; i < id_num; i++) {
+    obj[i].ID = obj[i].ID + i + 1;
+    obj[i].ExternFlag = 0;
+    obj[i].RemoteFlag = 0;
+    obj[i].SendType = 0;
+    obj[i].DataLen = len;
+    DataInitial(obj[i].Data, cmd.SAVE_PARAMETERS, len);
+  }
+  PrintTest(obj[0].Data, len, "save parameter : ");
+  SendCommand(obj, id_num);
+  delete [] obj;
+  if (!VCI_CloseDevice(device_type, device_index)) {
+    ROS_WARN("close device failure");
+  } else {
+    ROS_INFO("close device success");
+  }
+}
 
 }  // namespace mobile
 

@@ -41,4 +41,9 @@ homing:
   rl: 27996  # corresponding impulse of steering motor (rear left)
   rr: 25750  # corresponding impulse of steering motor (rear right)
 
-homing_error_limit: 100
+homing_error_limit: 25
+
+home_control:
+  p: 2.0
+  i: 1.0
+  d: 1.0

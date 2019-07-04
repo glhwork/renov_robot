@@ -1,5 +1,6 @@
 <launch>
   <node pkg="mobile_base_teleop" type="renov_teleop_key.py" name="renov_teleop_key" output="screen" />
+  <node pkg="sensor_startup" type="remote_control" name="remote_control" output="screen" />
 
 
 

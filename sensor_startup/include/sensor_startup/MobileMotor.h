@@ -76,6 +76,14 @@ class MobileMotor {
   // pre-defined commands as data arrays
   Command cmd;
 
+  // this CAN device has two can channels
+  // device type of CAN-Analyst, refer to controlcan.h
+  int device_type;
+  int device_index;
+  int can_index;
+  // id_num means the quantity of motor-drivers we use
+  int id_num;
+
  private:
 
   /* LAUNCH PARAMETERS */
@@ -96,13 +104,7 @@ class MobileMotor {
 
   /* CONFIG PARAMETERS */
   YAML::Node param;
-  // this CAN device has two can channels
-  // device type of CAN-Analyst, refer to controlcan.h
-  int device_type;
-  int device_index;
-  int can_index;
-  // id_num means the quantity of motor-drivers we use
-  int id_num;
+  
 
   // working mode of motors:
   // 0 -> position servo
@@ -126,6 +128,10 @@ class MobileMotor {
   int abs_home[4];
   // error limit to judge whether steering motor finishes homing
   int error_limit;
+  // PID parameters in homing process
+  double home_kp;
+  double home_ki;
+  double home_kd;
 
   
   /* GLOBAL VARIABLES */

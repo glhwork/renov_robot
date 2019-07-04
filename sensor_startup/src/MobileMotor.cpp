@@ -72,6 +72,9 @@ void MobileMotor::ReadFile(const std::string& address) {
   abs_home[3] = param["homing"]["rr"].as<int>();
 
   error_limit = param["homing_error_limit"].as<int>();
+  home_kp = param["home_control"]["p"].as<double>();
+  home_ki = param["home_control"]["i"].as<double>();
+  home_kd = param["home_control"]["d"].as<double>();
 
   reduc_ratio_s = param["reduc_ratio_s"].as<double>();
   reduc_ratio_w = param["reduc_ratio_w"].as<double>();
@@ -854,11 +857,6 @@ bool MobileMotor::ReadEncoder(int* encod_data) {
     return flag;
 
   }
-
-
-
-
-
 }
 
 void MobileMotor::Homing() {
@@ -877,15 +875,13 @@ void MobileMotor::Homing() {
     }
     int error[4];
     float steer_v[4];
-    /********* k_p is undefined ********/
-    double k_p = 2;
 
     for (size_t i = 0; i < 4; i++) {
       error[i] = encod_data[i] - abs_home[i];
-      if (abs(error[i]) < error_limit) {
+      if (abs(error[i]) <= error_limit) {
         steer_v[i] = 0.0;
       } else {
-        steer_v[i] = (float)(k_p * error[i]); 
+        steer_v[i] = (float)(home_kp * error[i]); 
       }
     }
   
