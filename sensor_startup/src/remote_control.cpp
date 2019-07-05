@@ -37,7 +37,7 @@ class Tele : public MobileMotor {
 
 void Tele::ReadTeleopFile() {
   YAML::Node config 
-    = YAML::LoadFile("~/renov_ws/src/renov_robot/sensor_startup/data/teleop_config.yaml");
+    = YAML::LoadFile("/home/renov_robot/catkin_ws/src/renov_robot/sensor_startup/data/teleop_config.yaml");
   wheel_dis_len = config["wheel_dis_len"].as<double>();
   wheel_dis_wid = config["wheel_dis_wid"].as<double>(); 
 
@@ -125,6 +125,7 @@ int main(int argc, char** argv) {
 
   mobile::Tele tele;
   ros::Subscriber tele_sub = n.subscribe("cmd_vel", 100, &mobile::Tele::TeleControl, &tele);
+  ros::Subscriber stop_sub = n.subscribe("stop", 100, &mobile::Tele::TeleStop, &tele);
 
   ros::spin();
   return 0;
