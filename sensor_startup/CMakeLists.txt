@@ -92,6 +92,7 @@ add_executable(walking_demo
   src/test/walking_demo
 )
 target_link_libraries(walking_demo
+  yaml-cpp
   ${catkin_LIBRARIES}
 )
 
