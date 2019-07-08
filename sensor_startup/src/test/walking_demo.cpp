@@ -265,7 +265,11 @@ void Demo::RotaryBrake(const double& a_cur) {
 }
 
 void Demo::Lateral(const double& v) {
-
+  
+  if (v*22.5 > 1000) {
+    ROS_WARN("too fast!!");
+    return ;
+  }
   sensor_msgs::JointState js;
   js.header.frame_id = "motor";
   js.header.stamp = ros::Time::now();
