@@ -4,7 +4,7 @@
     <param name="state_topic" value="motor_state"/>
     <param name="file_address" 
       value="/home/glh/renov_ws/src/renov_robot/sensor_startup/data/motor_config.yaml"/>
-    <param name="delay_time" value="1000"/>
+    <param name="delay_time" value="10000"/>
     <param name="wait_time" value="10"/>
   </node>
 

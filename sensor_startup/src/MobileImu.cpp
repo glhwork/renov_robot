@@ -32,11 +32,52 @@ void MobileImu::SerialInit() {
   if (imu_ser.isOpen()) {
     ROS_INFO("Open serial port successfully");
 
-    imu_ser.write(cmd.OUTPUT_FREQUENCY_00HZ,
-                  sizeof(cmd.OUTPUT_FREQUENCY_00HZ));
+    if (use_request) {
+      imu_ser.write(cmd.OUTPUT_FREQUENCY_00HZ,
+                    sizeof(cmd.OUTPUT_FREQUENCY_00HZ));
+    } else {
+      switch (output_freq) {
+        case 5: {
+          imu_ser.write(cmd.OUTPUT_FREQUENCY_05HZ,
+                        sizeof(cmd.OUTPUT_FREQUENCY_05HZ));
+          break;
+        }
+        case 15: {
+          imu_ser.write(cmd.OUTPUT_FREQUENCY_15HZ,
+                        sizeof(cmd.OUTPUT_FREQUENCY_15HZ));
+          break;
+        }
+        case 25: {
+          imu_ser.write(cmd.OUTPUT_FREQUENCY_25HZ,
+                        sizeof(cmd.OUTPUT_FREQUENCY_25HZ));
+          break;
+        }
+        case 35: {
+          imu_ser.write(cmd.OUTPUT_FREQUENCY_35HZ,
+                        sizeof(cmd.OUTPUT_FREQUENCY_35HZ));
+          break;
+        }
+        case 50: {
+          imu_ser.write(cmd.OUTPUT_FREQUENCY_50HZ,
+                        sizeof(cmd.OUTPUT_FREQUENCY_50HZ));
+          break;
+        }
+        case 100: {
+          imu_ser.write(cmd.OUTPUT_FREQUENCY_100HZ,
+                        sizeof(cmd.OUTPUT_FREQUENCY_100HZ));
+          break;
+        }
+        default: {
+          ROS_WARN("incorrect frequency number");
+          exit(1);
+          break;
+        } 
+      }
+
+    }
+    /*
     std::vector<uint8_t> reply;
     reply.clear();
-    /*
     std::cout << imu_ser.available() << std::endl;
     imu_ser.read(reply, imu_ser.available());
     if (0 == reply[reply.size() - 2]) {
@@ -67,6 +108,12 @@ void MobileImu::ParamInit() {
   if (!n_private.getParam("imu_pub_topic", imu_pub_topic)) {
     imu_pub_topic = "imu";
   }
+  if (!n_private.getParam("use_request", use_request)) {
+    use_request = true;
+  }
+  if (!n_private.getParam("output_freq", output_freq)) {
+    output_freq = 50;
+  }
 
 }
 
@@ -76,12 +123,21 @@ void MobileImu::Setup() {
 
 void MobileImu::ReadData() {
 
-  imu_ser.write(cmd.ASK_FOR_DATA, sizeof(cmd.ASK_FOR_DATA));
+  if (use_request) {
+    imu_ser.write(cmd.ASK_FOR_DATA, sizeof(cmd.ASK_FOR_DATA));
 
-  std::vector<uint8_t> imu_data;
-  if (imu_ser.available()) {
-    imu_data.clear();
-    size_t read_bytes = imu_ser.read(imu_data, imu_ser.available());
+    std::vector<uint8_t> imu_data;
+    std::vector<uint8_t> empty_data;
+    if (imu_ser.available()) {
+      imu_data.clear();
+      imu_ser.read(imu_data, 32);
+      imu_ser.read(empty_data, imu_ser.available());
+      DataParser(imu_data);
+    }
+  } else {
+    std::vector<uint8_t> imu_data;
+    imu_ser.read(imu_data, 32);
+    //imu_ser.flushInput();
     DataParser(imu_data);
   }
 }

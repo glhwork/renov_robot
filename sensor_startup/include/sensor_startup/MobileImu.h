@@ -47,6 +47,8 @@ class MobileImu {
   int baud_rate;
   std::string imu_frame_id;
   std::string imu_pub_topic;
+  bool use_request;
+  int output_freq;
 
   ImuCommand cmd;
   serial::Serial imu_ser;
