@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 #include <unistd.h>
+#include <boost/thread.hpp>
 
 #include "yaml-cpp/yaml.h"
 
@@ -57,7 +58,7 @@ class MobileMotor {
                      const uint8_t& index, const int& velo);
 
   void TeleopCallback(const geometry_msgs::Twist& twist);
-  void FeedbackCallback(const ros::TimerEvent&);
+  void FeedbackCallback();
   void StopCallback(const std_msgs::Bool& stop);
   void ControlMotor(const std::vector<float>& raw_state);
    
@@ -69,6 +70,7 @@ class MobileMotor {
   bool ReadEncoder(int* encod_data);
   void Homing();
 
+  void Loop();
 
  protected:
   // COBID of multiple motor drivers
@@ -97,6 +99,8 @@ class MobileMotor {
   int delay_time;
   // time to determine how long shoud it wait if buffer is empty
   int wait_time;
+  // the publish period of motor states
+  double state_pub_period;
 
   
 
@@ -142,6 +146,8 @@ class MobileMotor {
   ros::NodeHandle n_private;
   ros::Publisher state_pub;
 
+  /* THREADS */ 
+  boost::thread* state_pub_thread;
 
 
 };  // class MobileMotor
