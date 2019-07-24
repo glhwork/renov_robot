@@ -6,6 +6,7 @@
     <param name="imu_frame_id" value="base_imu"/>
     <param name="imu_pub_topic" value="data_raw"/>
     <param name="use_request" value="true"/>
+    <!-- output_freq should only be : 5 15 25 35 50 100 -->
     <param name="output_freq" value="50"/>
   </node>
 
