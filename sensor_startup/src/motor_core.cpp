@@ -4,7 +4,6 @@ using mobile::MobileMotor;
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "motor_core");
-  ros::NodeHandle n;
 
   MobileMotor motor;
   motor.Loop();

@@ -810,146 +810,145 @@ bool MobileMotor::ReadEncoder(int* encod_data) {
 
     bool flag = (flag_vec[0] && flag_vec[1] && flag_vec[2] && flag_vec[3]);
     if (flag) {
-      ROS_INFO("ENCODER DATA is : 1: %d, 2: %d, 3: %d, 4: %d", encod_data[0],
-               encod_data[1], encod_data[2], encod_data[3]);
+      ROS_INFO("ENCODER DATA is : 1: %d, 2: %d, 3: %d, 4: %d", 
+               encod_data[0], encod_data[1], encod_data[2], encod_data[3]);
     }
 
     delete[] rec_obj;
     return flag;
   }
 }
+/*
+void MobileMotor::Homing() {
+  int len = sizeof(cmd.SET_MODE_VELOCITY) /
+            sizeof(cmd.SET_MODE_VELOCITY[0]);
+  ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
 
-// void MobileMotor::Homing() {
-//   int len = sizeof(cmd.SET_MODE_VELOCITY) /
-//             sizeof(cmd.SET_MODE_VELOCITY[0]);
-//   ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
+  int* encod_data = new int;
+  while (true) {
+    // loop used to continuously read
+    // until data of four encoders are got while (true) {
+      if (ReadEncoder(encod_data)) {
+        break;
+      }
+    }
+    int error[4];
+    float steer_v[4];
 
-//   int* encod_data = new int;
-//   while (true) {
-//     // loop used to continuously read
-//     // until data of four encoders are got
-//     while (true) {
-//       if (ReadEncoder(encod_data)) {
-//         break;
-//       }
-//     }
-//     int error[4];
-//     float steer_v[4];
+    for (size_t i = 0; i < 4; i++) {
+      error[i] = encod_data[i] - abs_home[i];
+      if (abs(error[i]) <= error_limit) {
+        steer_v[i] = 0.0;
+      } else {
+        steer_v[i] = (float)(home_kp * error[i]);
+      }
+    }
 
-//     for (size_t i = 0; i < 4; i++) {
-//       error[i] = encod_data[i] - abs_home[i];
-//       if (abs(error[i]) <= error_limit) {
-//         steer_v[i] = 0.0;
-//       } else {
-//         steer_v[i] = (float)(home_kp * error[i]);
-//       }
-//     }
+    walking_mode = VELOCITY_MODE;
+    steering_mode = VELOCITY_MODE;
 
-//     walking_mode = VELOCITY_MODE;
-//     steering_mode = VELOCITY_MODE;
+    std::vector<float> raw_state;
+    raw_state.resize(8);
+    raw_state = {0, 0, 0, 0, steer_v[0], steer_v[1], steer_v[2], steer_v[3]};
+    ControlMotor(raw_state);
 
-//     std::vector<float> raw_state;
-//     raw_state.resize(8);
-//     raw_state = {0, 0, 0, 0, steer_v[0], steer_v[1], steer_v[2], steer_v[3]};
-//     ControlMotor(raw_state);
+    if (steer_v[0] == 0.0 && steer_v[1] == 0.0 &&
+        steer_v[2] == 0.0 && steer_v[3] == 0.0) {
+      ROS_INFO("homing finish !!");
+      break;
+    }
+  }
+  delete encod_data;
 
-//     if (steer_v[0] == 0.0 && steer_v[1] == 0.0 &&
-//         steer_v[2] == 0.0 && steer_v[3] == 0.0) {
-//       ROS_INFO("homing finish !!");
-//       break;
-//     }
-//   }
-//   delete encod_data;
+  while (true) {
+    FeedbackReq();
+    uint data_num;
+    data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
+    if (-1 == data_num) {
+      ROS_WARN("Get data num of homing position failure !!");
+      continue;
+    }
 
-//   while (true) {
-//     FeedbackReq();
-//     uint data_num;
-//     data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
-//     if (-1 == data_num) {
-//       ROS_WARN("Get data num of homing position failure !!");
-//       continue;
-//     }
+    if (0 == data_num) {
+      ROS_WARN("no data in buffer!!");
+      continue;
+    } else {
+      PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
+      uint rec_num = VCI_Receive(device_type, device_index, can_index,
+                                 rec_obj, data_num, wait_time);
+      if (-1 == rec_num) {
+        ROS_WARN("CAN reading of homing position failure");
+        continue;
+      }
 
-//     if (0 == data_num) {
-//       ROS_WARN("no data in buffer!!");
-//       continue;
-//     } else {
-//       PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
-//       uint rec_num = VCI_Receive(device_type, device_index, can_index,
-//                                  rec_obj, data_num, wait_time);
-//       if (-1 == rec_num) {
-//         ROS_WARN("CAN reading of homing position failure");
-//         continue;
-//       }
+      bool flag[4] = {false, false, false, false};
+      for (size_t i = 0; i < rec_num; i++) {
+        if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
+            0x00000700 + cob_id[1] == rec_obj[i].ID ||
+            0x00000700 + cob_id[2] == rec_obj[i].ID ||
+            0x00000700 + cob_id[3] == rec_obj[i].ID) {
+          continue;
+        }
+        if (REC_BASE_ID + cob_id[2] == rec_obj[i].ID) {
+          // front left motor position
+          if (0x64 == rec_obj[i].Data[1] && LEFT_MOTOR == rec_obj[i].Data[2])
+          {
+            home[0] = FourByteHex2Int(&rec_obj[i].Data[4]);
+            flag[0] = true;
+          }
+          // front right motor position
+          if (0x64 == rec_obj[i].Data[1] && RIGHT_MOTOR ==
+          rec_obj[i].Data[2]) {
+            home[1] = FourByteHex2Int(&rec_obj[i].Data[4]);
+            flag[1] = true;
+          }
+        }  // end of [if] obtaining data of front sterring motors
+        if (REC_BASE_ID + cob_id[3] == rec_obj[i].ID) {
+          // rear left motor position
+          if (0x64 == rec_obj[i].Data[1] && LEFT_MOTOR == rec_obj[i].Data[2])
+          {
+            home[2] = FourByteHex2Int(&rec_obj[i].Data[4]);
+            flag[2] = true;
+          }
+          // rear right motor position
+          if (0x64 == rec_obj[i].Data[1] && RIGHT_MOTOR ==
+          rec_obj[i].Data[2]) {
+            home[3] = FourByteHex2Int(&rec_obj[i].Data[4]);
+            flag[3] = true;
+          }
+        }  // end of [if] obtaining data of rear steering motors
 
-//       bool flag[4] = {false, false, false, false};
-//       for (size_t i = 0; i < rec_num; i++) {
-//         if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
-//             0x00000700 + cob_id[1] == rec_obj[i].ID ||
-//             0x00000700 + cob_id[2] == rec_obj[i].ID ||
-//             0x00000700 + cob_id[3] == rec_obj[i].ID) {
-//           continue;
-//         }
-//         if (REC_BASE_ID + cob_id[2] == rec_obj[i].ID) {
-//           // front left motor position
-//           if (0x64 == rec_obj[i].Data[1] && LEFT_MOTOR == rec_obj[i].Data[2])
-//           {
-//             home[0] = FourByteHex2Int(&rec_obj[i].Data[4]);
-//             flag[0] = true;
-//           }
-//           // front right motor position
-//           if (0x64 == rec_obj[i].Data[1] && RIGHT_MOTOR ==
-//           rec_obj[i].Data[2]) {
-//             home[1] = FourByteHex2Int(&rec_obj[i].Data[4]);
-//             flag[1] = true;
-//           }
-//         }  // end of [if] obtaining data of front sterring motors
-//         if (REC_BASE_ID + cob_id[3] == rec_obj[i].ID) {
-//           // rear left motor position
-//           if (0x64 == rec_obj[i].Data[1] && LEFT_MOTOR == rec_obj[i].Data[2])
-//           {
-//             home[2] = FourByteHex2Int(&rec_obj[i].Data[4]);
-//             flag[2] = true;
-//           }
-//           // rear right motor position
-//           if (0x64 == rec_obj[i].Data[1] && RIGHT_MOTOR ==
-//           rec_obj[i].Data[2]) {
-//             home[3] = FourByteHex2Int(&rec_obj[i].Data[4]);
-//             flag[3] = true;
-//           }
-//         }  // end of [if] obtaining data of rear steering motors
+      }  // end of [for] loop obtaining data of sterring motors
+      if (flag[0] && flag[1] && flag[2] && flag[3]) {
+        PVCI_CAN_OBJ posi_obj = GetVciObject(4);
+        posi_obj[0].ID += cob_id[2];
+        posi_obj[1].ID += cob_id[2];
+        posi_obj[2].ID += cob_id[3];
+        posi_obj[3].ID += cob_id[3];
 
-//       }  // end of [for] loop obtaining data of sterring motors
-//       if (flag[0] && flag[1] && flag[2] && flag[3]) {
-//         PVCI_CAN_OBJ posi_obj = GetVciObject(4);
-//         posi_obj[0].ID += cob_id[2];
-//         posi_obj[1].ID += cob_id[2];
-//         posi_obj[2].ID += cob_id[3];
-//         posi_obj[3].ID += cob_id[3];
+        int len = sizeof(cmd.BASE_POSITION_COMMAND) /
+                  sizeof(cmd.BASE_POSITION_COMMAND[0]);
+        DataTransform(posi_obj[0].Data, cmd.BASE_POSITION_COMMAND,
+                      len, LEFT_MOTOR, home[0]);
+        DataTransform(posi_obj[1].Data, cmd.BASE_POSITION_COMMAND,
+                      len, RIGHT_MOTOR, home[1]);
+        DataTransform(posi_obj[2].Data, cmd.BASE_POSITION_COMMAND,
+                      len, LEFT_MOTOR, home[2]);
+        DataTransform(posi_obj[3].Data, cmd.BASE_POSITION_COMMAND,
+                      len, RIGHT_MOTOR, home[3]);
+        SendCommand(posi_obj, 4);
 
-//         int len = sizeof(cmd.BASE_POSITION_COMMAND) /
-//                   sizeof(cmd.BASE_POSITION_COMMAND[0]);
-//         DataTransform(posi_obj[0].Data, cmd.BASE_POSITION_COMMAND,
-//                       len, LEFT_MOTOR, home[0]);
-//         DataTransform(posi_obj[1].Data, cmd.BASE_POSITION_COMMAND,
-//                       len, RIGHT_MOTOR, home[1]);
-//         DataTransform(posi_obj[2].Data, cmd.BASE_POSITION_COMMAND,
-//                       len, LEFT_MOTOR, home[2]);
-//         DataTransform(posi_obj[3].Data, cmd.BASE_POSITION_COMMAND,
-//                       len, RIGHT_MOTOR, home[3]);
-//         SendCommand(posi_obj, 4);
-
-//         delete [] posi_obj;
-//         delete [] rec_obj;
-//         ROS_INFO("Get home position successfully");
-//         sleep(2);
-//         break;
-//       }
-//       delete [] rec_obj;
-//     }
-//   }  // end of [while] loop reading position of motors
-// }
-
+        delete [] posi_obj;
+        delete [] rec_obj;
+        ROS_INFO("Get home position successfully");
+        sleep(2);
+        break;
+      }
+      delete [] rec_obj;
+    }
+  }  // end of [while] loop reading position of motors
+}
+*/
 void MobileMotor::Homing() {
   int len = sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
   ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
@@ -1030,11 +1029,11 @@ void MobileMotor::Homing() {
     }
     int error[4];
 
-    int quit_count = 0;
+    bool steer_stop[4] = {false, false, false, false};
     for (size_t i = 0; i < 4; i++) {
       error[i] = encod_data[i] - abs_home[i];
       if (abs(error[i]) <= error_limit) {
-        quit_count++;
+        steer_stop[i] = true;
         steer_p[i] += 0.0;
       } else {
         steer_p[i] += (float)(home_kp * error[i]);
@@ -1049,7 +1048,7 @@ void MobileMotor::Homing() {
     raw_state = {0, 0, 0, 0, steer_p[0], steer_p[1], steer_p[2], steer_p[3]};
     ControlMotor(raw_state);
 
-    if (4 == quit_count) {
+    if (steer_stop[0] && steer_stop[1] && steer_stop[2] && steer_stop[3]) {
       for (size_t i = 0; i < 4; i++) {
         home[i] = steer_p[i];
       }
