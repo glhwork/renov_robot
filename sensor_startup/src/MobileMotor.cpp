@@ -690,12 +690,14 @@ std::vector<int> MobileMotor::CommandTransform(
   }
   return state;
 }
-void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
+
+void MobileMotor::StopMotor() {
   int len;
 
   // send command to disenable the drivers
   PVCI_CAN_OBJ obj = GetVciObject(id_num);
-  len = sizeof(cmd.DISENABLE_COMMAND) / sizeof(cmd.DISENABLE_COMMAND[0]);
+  len = sizeof(cmd.DISENABLE_COMMAND) /
+        sizeof(cmd.DISENABLE_COMMAND[0]);
   for (size_t i = 0; i < id_num; i++) {
     obj[i].ID = obj[i].ID + i + 1;
     obj[i].ExternFlag = 0;
@@ -710,7 +712,8 @@ void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
 
   // send command to save the current state of drivers and motors
   obj = GetVciObject(id_num);
-  len = sizeof(cmd.SAVE_PARAMETERS) / sizeof(cmd.SAVE_PARAMETERS[0]);
+  len = sizeof(cmd.SAVE_PARAMETERS) / 
+        sizeof(cmd.SAVE_PARAMETERS[0]);
   for (size_t i = 0; i < id_num; i++) {
     obj[i].ID = obj[i].ID + i + 1;
     obj[i].ExternFlag = 0;
@@ -728,6 +731,12 @@ void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
   } else {
     ROS_INFO("close device success");
   }
+}
+
+void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
+  
+  StopMotor();
+
 }
 
 void MobileMotor::PrintTest(BYTE* data, const int& len,
@@ -751,7 +760,8 @@ int MobileMotor::FourByteHex2Int(uint8_t* data) {
 
 bool MobileMotor::ReadEncoder(int* encod_data) {
   PVCI_CAN_OBJ cmd_obj = GetVciObject(4);
-  int len = sizeof(cmd.REQUEST_ENCODER_1) / sizeof(cmd.REQUEST_ENCODER_1[0]);
+  int len = sizeof(cmd.REQUEST_ENCODER_1) /
+            sizeof(cmd.REQUEST_ENCODER_1[0]);
   for (size_t i = 0; i < 4; i++) {
     cmd_obj[i].ID = i + 1;
     cmd_obj[i].DataLen = len;

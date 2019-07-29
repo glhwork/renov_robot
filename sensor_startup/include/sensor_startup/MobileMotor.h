@@ -62,6 +62,7 @@ class MobileMotor {
   void StopCallback(const std_msgs::Bool& stop);
   void ControlMotor(const std::vector<float>& raw_state);
    
+  void StopMotor();
   void FeedbackReq();
   std::vector<int> CommandTransform(const std::vector<float>& raw_state);
   void PrintTest(BYTE* data, const int& len, const std::string& str);
