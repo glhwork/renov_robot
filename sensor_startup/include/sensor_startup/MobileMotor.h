@@ -120,6 +120,7 @@ class MobileMotor {
   // lines of encoders
   uint encoder_s;
   uint encoder_w;
+  uint abs_encoder;
   // reduction ratio of steering or walking motors
   double reduc_ratio_s;
   double reduc_ratio_w;

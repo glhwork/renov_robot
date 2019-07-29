@@ -49,6 +49,7 @@ void MobileMotor::ReadFile(const std::string& address) {
 
   encoder_s = (uint)param["encoder_s"].as<int>();
   encoder_w = (uint)param["encoder_w"].as<int>();
+  abs_encoder = (uint)param["abs_encoder"].as<int>();
   max_velocity = (uint)param["max_velocity"].as<int>();
 
   cob_id[0] = param["walking_channel"]["chn1"].as<int>();
@@ -828,20 +829,21 @@ bool MobileMotor::ReadEncoder(int* encod_data) {
     return flag;
   }
 }
-/*
+
 void MobileMotor::Homing() {
   int len = sizeof(cmd.SET_MODE_VELOCITY) /
             sizeof(cmd.SET_MODE_VELOCITY[0]);
   ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
 
   int* encod_data = new int;
+  int error_k1[4];
+  int error_k2[4];
   while (true) {
     // loop used to continuously read
     // until data of four encoders are got while (true) {
       if (ReadEncoder(encod_data)) {
         break;
       }
-    }
     int error[4];
     float steer_v[4];
 
@@ -850,8 +852,18 @@ void MobileMotor::Homing() {
       if (abs(error[i]) <= error_limit) {
         steer_v[i] = 0.0;
       } else {
-        steer_v[i] = (float)(home_kp * error[i]);
+        double K[3];
+        K[0] = home_kp + home_ki + home_kd;
+        K[1] = home_kp + 2 * home_kd;
+        K[3] = home_kd;
+        steer_v[i] = K[0] * error[i] - K[1] * error_k1[i] + K[2] * error_k2[i]; 
       }
+    }
+    for (size_t i = 0; i < 4; i++) {
+      double k = 0.02;
+      steer_v[i] = steer_v[i] / abs_encoder / k;
+      error_k2[i] = error_k1[i];
+      error_k1[i] = error[i];
     }
 
     walking_mode = VELOCITY_MODE;
@@ -865,6 +877,7 @@ void MobileMotor::Homing() {
     if (steer_v[0] == 0.0 && steer_v[1] == 0.0 &&
         steer_v[2] == 0.0 && steer_v[3] == 0.0) {
       ROS_INFO("homing finish !!");
+      int len;
       break;
     }
   }
@@ -958,12 +971,14 @@ void MobileMotor::Homing() {
     }
   }  // end of [while] loop reading position of motors
 }
-*/
+/*
 void MobileMotor::Homing() {
   int len = sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
   ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
 
   float steer_p[4];
+  int error_k1[4];  // error of last time stamp
+  int error_k2[4];  // error of the time stamp before last
   while (true) {
     FeedbackReq();
     uint data_num;
@@ -1021,7 +1036,6 @@ void MobileMotor::Homing() {
       }  // end of [for] loop obtaining data of sterring motors
       if (flag[0] && flag[1] && flag[2] && flag[3]) {
         delete[] rec_obj;
-        sleep(1);
         break;
       }
       delete[] rec_obj;
@@ -1040,13 +1054,14 @@ void MobileMotor::Homing() {
     int error[4];
 
     bool steer_stop[4] = {false, false, false, false};
+    float delta_p[4];
     for (size_t i = 0; i < 4; i++) {
       error[i] = encod_data[i] - abs_home[i];
       if (abs(error[i]) <= error_limit) {
         steer_stop[i] = true;
-        steer_p[i] += 0.0;
+        delta_p[i] = 0.0;
       } else {
-        steer_p[i] += (float)(home_kp * error[i]);
+        delta_p[i] = (float)(home_kp * error[i]);
       }
     }
 
@@ -1055,6 +1070,11 @@ void MobileMotor::Homing() {
 
     std::vector<float> raw_state;
     raw_state.resize(8);
+    for (size_t i = 0; i < 4; i++) {
+     double abs_ste_ratio = 0.02;
+      steer_p[i] += 
+         (delta_p[i] * (float)encoder_s / abs_ste_ratio / (float)abs_encoder);
+    }
     raw_state = {0, 0, 0, 0, steer_p[0], steer_p[1], steer_p[2], steer_p[3]};
     ControlMotor(raw_state);
 
@@ -1068,7 +1088,7 @@ void MobileMotor::Homing() {
   }
   delete encod_data;
 }
-
+*/
 void MobileMotor::Loop() {
 
   ros::Subscriber control_pub =
