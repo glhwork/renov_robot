@@ -11,9 +11,7 @@ MobileMotor::MobileMotor() {
   state_pub_thread = NULL;
 }
 
-MobileMotor::~MobileMotor() {
-  delete state_pub_thread;
-}
+MobileMotor::~MobileMotor() { delete state_pub_thread; }
 
 void MobileMotor::ParamInit() {
   if (!n_private.getParam("port", port)) {
@@ -32,6 +30,9 @@ void MobileMotor::ParamInit() {
   }
   if (!n_private.getParam("wait_time", wait_time)) {
     wait_time = 10;
+  }
+  if (!n_private.getParam("state_pub_period", state_pub_period)) {
+    state_pub_period = 0.1;
   }
 }
 
@@ -143,8 +144,7 @@ bool MobileMotor::DriverInit() {
 
 bool MobileMotor::SetMode() {
   // set mode of walking motors
-  switch (walking_mode) {
-    case POSITION_MODE: {
+  switch (walking_mode) { case POSITION_MODE: {
       int len;
 
       // pre-set the velocity under position mode
@@ -449,91 +449,104 @@ void MobileMotor::FeedbackCallback() {
     return;
   }
 
-  FeedbackReq();
-
-  uint data_num;
-  data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
-  if (0 == data_num) {
-    ROS_WARN("no data in buffer of motor feedback!!");
-    return;
-  } else if (-1 == data_num) {
-    ROS_WARN("get data num of motor feedback failure!");
-    return;
-  }
-
-  PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
-  uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
-                             data_num, wait_time);
-  if (-1 == rec_num) {
-    delete[] rec_obj;
-    ROS_WARN("CAN reading of motor feedback failure!");
-    return;
-  }
-
-  sensor_msgs::JointState state;
-  state.header.frame_id = "motor";
-  state.header.stamp = ros::Time::now();
-  state.name.resize(8);
-  state.name = {"front_left_walking",  "front_right_walking",
-                "rear_left_walking",   "rear_right_walking",
-                "front_left_steering", "front_right_steering",
-                "rear_left_steering",  "rear_right_steering"};
-  state.position.resize(8);
-  state.velocity.resize(8);
-  state.velocity = {10000.0, 10000.0, 10000.0, 10000.0,
-                    10000.0, 10000.0, 10000.0, 10000.0};
-  for (size_t i = 0; i < data_num; i++) {
-    // if ((REC_BASE_ID + cob_id[0]) == rec_obj[i].ID) {
-
-    // }
-    // if ((REC_BASE_ID + cob_id[1]) == rec_obj[i].ID) {
-
-    // }
-    // if ((REC_BASE_ID + cob_id[2]) == rec_obj[i].ID) {
-
-    // }
-    // if ((REC_BASE_ID + cob_id[3]) == rec_obj[i].ID) {
-
-    // }
-    if (LEFT_MOTOR == rec_obj[i].Data[2]) {
-      if (POSITION_FD == rec_obj[i].Data[1]) {
-        int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
-        state.position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-        state.name[index] = state.name[index] + "_1";
-      }
-      if (VELOCITY_FD == rec_obj[i].Data[1]) {
-        int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
-        state.velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-      }
+  ros::Rate r(1.0 / state_pub_period);
+  while (ros::ok()) {
+    if (!if_initial) {
+      ROS_WARN("feedback failure caused by initialization failure");
+      continue;
     }
-    if (RIGHT_MOTOR == rec_obj[i].Data[2]) {
-      if (POSITION_FD == rec_obj[i].Data[1]) {
-        int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
-        state.position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-        state.name[index] = state.name[index] + "_1";
-      }
-      if (VELOCITY_FD == rec_obj[i].Data[1]) {
-        int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
-        state.velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-      }
-    }
-  }
+    FeedbackReq();
 
-  for (size_t i = 0; i < state.velocity.size(); i++) {
-    if (10000.0 == state.velocity[i]) {
+    uint data_num;
+    data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
+    if (0 == data_num) {
+      ROS_WARN("no data in buffer of motor feedback!!");
+      continue;
+    } else if (-1 == data_num) {
+      ROS_WARN("get data num of motor feedback failure!");
+      continue;
+    }
+
+    PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
+    uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
+                               data_num, wait_time);
+    if (-1 == rec_num) {
       delete[] rec_obj;
-      ROS_WARN("no enough velocity feedback!!");
-      return;
+      ROS_WARN("CAN reading of motor feedback failure!");
+      continue;
     }
-    if (state.name[i].find("_1") > state.name[i].size()) {
-      delete[] rec_obj;
-      ROS_WARN("no enough position feedback!!");
-      return;
-    }
-  }
 
-  state_pub.publish(state);
-  delete[] rec_obj;
+    sensor_msgs::JointState state;
+    state.header.frame_id = "motor";
+    state.header.stamp = ros::Time::now();
+    state.name.resize(8);
+    state.name = {"front_left_walking",  "front_right_walking",
+                  "rear_left_walking",   "rear_right_walking",
+                  "front_left_steering", "front_right_steering",
+                  "rear_left_steering",  "rear_right_steering"};
+    state.position.resize(8);
+    state.velocity.resize(8);
+    state.velocity = {10000.0, 10000.0, 10000.0, 10000.0,
+                      10000.0, 10000.0, 10000.0, 10000.0};
+    for (size_t i = 0; i < data_num; i++) {
+      // if ((REC_BASE_ID + cob_id[0]) == rec_obj[i].ID) {
+
+      // }
+      // if ((REC_BASE_ID + cob_id[1]) == rec_obj[i].ID) {
+
+      // }
+      // if ((REC_BASE_ID + cob_id[2]) == rec_obj[i].ID) {
+
+      // }
+      // if ((REC_BASE_ID + cob_id[3]) == rec_obj[i].ID) {
+
+      // }
+      if (LEFT_MOTOR == rec_obj[i].Data[2]) {
+        if (POSITION_FD == rec_obj[i].Data[1]) {
+          int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
+          state.position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+          state.name[index] = state.name[index] + "_1";
+        }
+        if (VELOCITY_FD == rec_obj[i].Data[1]) {
+          int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
+          state.velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+        }
+      }
+      if (RIGHT_MOTOR == rec_obj[i].Data[2]) {
+        if (POSITION_FD == rec_obj[i].Data[1]) {
+          int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
+          state.position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+          state.name[index] = state.name[index] + "_1";
+        }
+        if (VELOCITY_FD == rec_obj[i].Data[1]) {
+          int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
+          state.velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+        }
+      }
+    }
+
+    bool if_pub = true;
+    for (size_t i = 0; i < state.velocity.size(); i++) {
+      if (10000.0 == state.velocity[i]) {
+        delete[] rec_obj;
+        if_pub = false;
+        ROS_WARN("no enough velocity feedback!!");
+        break;
+      }
+      if (state.name[i].find("_1") > state.name[i].size()) {
+        delete[] rec_obj;
+        if_pub = false;
+        ROS_WARN("no enough position feedback!!");
+        break;
+      }
+    }
+
+    if (if_pub) {
+      state_pub.publish(state);
+      delete[] rec_obj;
+    }
+    r.sleep();
+  }
 }
 
 void MobileMotor::FeedbackReq() {
@@ -697,8 +710,7 @@ void MobileMotor::StopMotor() {
 
   // send command to disenable the drivers
   PVCI_CAN_OBJ obj = GetVciObject(id_num);
-  len = sizeof(cmd.DISENABLE_COMMAND) /
-        sizeof(cmd.DISENABLE_COMMAND[0]);
+  len = sizeof(cmd.DISENABLE_COMMAND) / sizeof(cmd.DISENABLE_COMMAND[0]);
   for (size_t i = 0; i < id_num; i++) {
     obj[i].ID = obj[i].ID + i + 1;
     obj[i].ExternFlag = 0;
@@ -713,8 +725,7 @@ void MobileMotor::StopMotor() {
 
   // send command to save the current state of drivers and motors
   obj = GetVciObject(id_num);
-  len = sizeof(cmd.SAVE_PARAMETERS) / 
-        sizeof(cmd.SAVE_PARAMETERS[0]);
+  len = sizeof(cmd.SAVE_PARAMETERS) / sizeof(cmd.SAVE_PARAMETERS[0]);
   for (size_t i = 0; i < id_num; i++) {
     obj[i].ID = obj[i].ID + i + 1;
     obj[i].ExternFlag = 0;
@@ -734,11 +745,7 @@ void MobileMotor::StopMotor() {
   }
 }
 
-void MobileMotor::StopCallback(const std_msgs::Bool& stop) {
-  
-  StopMotor();
-
-}
+void MobileMotor::StopCallback(const std_msgs::Bool& stop) { StopMotor(); }
 
 void MobileMotor::PrintTest(BYTE* data, const int& len,
                             const std::string& str) {
@@ -761,8 +768,7 @@ int MobileMotor::FourByteHex2Int(uint8_t* data) {
 
 bool MobileMotor::ReadEncoder(int* encod_data) {
   PVCI_CAN_OBJ cmd_obj = GetVciObject(4);
-  int len = sizeof(cmd.REQUEST_ENCODER_1) /
-            sizeof(cmd.REQUEST_ENCODER_1[0]);
+  int len = sizeof(cmd.REQUEST_ENCODER_1) / sizeof(cmd.REQUEST_ENCODER_1[0]);
   for (size_t i = 0; i < 4; i++) {
     cmd_obj[i].ID = i + 1;
     cmd_obj[i].DataLen = len;
@@ -821,8 +827,8 @@ bool MobileMotor::ReadEncoder(int* encod_data) {
 
     bool flag = (flag_vec[0] && flag_vec[1] && flag_vec[2] && flag_vec[3]);
     if (flag) {
-      ROS_INFO("ENCODER DATA is : 1: %d, 2: %d, 3: %d, 4: %d", 
-               encod_data[0], encod_data[1], encod_data[2], encod_data[3]);
+      ROS_INFO("ENCODER DATA is : 1: %d, 2: %d, 3: %d, 4: %d", encod_data[0],
+               encod_data[1], encod_data[2], encod_data[3]);
     }
 
     delete[] rec_obj;
@@ -831,8 +837,7 @@ bool MobileMotor::ReadEncoder(int* encod_data) {
 }
 
 void MobileMotor::Homing() {
-  int len = sizeof(cmd.SET_MODE_VELOCITY) /
-            sizeof(cmd.SET_MODE_VELOCITY[0]);
+  int len = sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
   ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
 
   int* encod_data = new int;
@@ -841,9 +846,9 @@ void MobileMotor::Homing() {
   while (true) {
     // loop used to continuously read
     // until data of four encoders are got while (true) {
-      if (ReadEncoder(encod_data)) {
-        break;
-      }
+    if (ReadEncoder(encod_data)) {
+      break;
+    }
     int error[4];
     float steer_v[4];
 
@@ -856,7 +861,7 @@ void MobileMotor::Homing() {
         K[0] = home_kp + home_ki + home_kd;
         K[1] = home_kp + 2 * home_kd;
         K[3] = home_kd;
-        steer_v[i] = K[0] * error[i] - K[1] * error_k1[i] + K[2] * error_k2[i]; 
+        steer_v[i] = K[0] * error[i] - K[1] * error_k1[i] + K[2] * error_k2[i];
       }
     }
     for (size_t i = 0; i < 4; i++) {
@@ -874,8 +879,8 @@ void MobileMotor::Homing() {
     raw_state = {0, 0, 0, 0, steer_v[0], steer_v[1], steer_v[2], steer_v[3]};
     ControlMotor(raw_state);
 
-    if (steer_v[0] == 0.0 && steer_v[1] == 0.0 &&
-        steer_v[2] == 0.0 && steer_v[3] == 0.0) {
+    if (steer_v[0] == 0.0 && steer_v[1] == 0.0 && steer_v[2] == 0.0 &&
+        steer_v[3] == 0.0) {
       ROS_INFO("homing finish !!");
       int len;
       break;
@@ -897,8 +902,8 @@ void MobileMotor::Homing() {
       continue;
     } else {
       PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
-      uint rec_num = VCI_Receive(device_type, device_index, can_index,
-                                 rec_obj, data_num, wait_time);
+      uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
+                                 data_num, wait_time);
       if (-1 == rec_num) {
         ROS_WARN("CAN reading of homing position failure");
         continue;
@@ -914,28 +919,24 @@ void MobileMotor::Homing() {
         }
         if (REC_BASE_ID + cob_id[2] == rec_obj[i].ID) {
           // front left motor position
-          if (0x64 == rec_obj[i].Data[1] && LEFT_MOTOR == rec_obj[i].Data[2])
-          {
+          if (0x64 == rec_obj[i].Data[1] && LEFT_MOTOR == rec_obj[i].Data[2]) {
             home[0] = FourByteHex2Int(&rec_obj[i].Data[4]);
             flag[0] = true;
           }
           // front right motor position
-          if (0x64 == rec_obj[i].Data[1] && RIGHT_MOTOR ==
-          rec_obj[i].Data[2]) {
+          if (0x64 == rec_obj[i].Data[1] && RIGHT_MOTOR == rec_obj[i].Data[2]) {
             home[1] = FourByteHex2Int(&rec_obj[i].Data[4]);
             flag[1] = true;
           }
         }  // end of [if] obtaining data of front sterring motors
         if (REC_BASE_ID + cob_id[3] == rec_obj[i].ID) {
           // rear left motor position
-          if (0x64 == rec_obj[i].Data[1] && LEFT_MOTOR == rec_obj[i].Data[2])
-          {
+          if (0x64 == rec_obj[i].Data[1] && LEFT_MOTOR == rec_obj[i].Data[2]) {
             home[2] = FourByteHex2Int(&rec_obj[i].Data[4]);
             flag[2] = true;
           }
           // rear right motor position
-          if (0x64 == rec_obj[i].Data[1] && RIGHT_MOTOR ==
-          rec_obj[i].Data[2]) {
+          if (0x64 == rec_obj[i].Data[1] && RIGHT_MOTOR == rec_obj[i].Data[2]) {
             home[3] = FourByteHex2Int(&rec_obj[i].Data[4]);
             flag[3] = true;
           }
@@ -951,23 +952,23 @@ void MobileMotor::Homing() {
 
         int len = sizeof(cmd.BASE_POSITION_COMMAND) /
                   sizeof(cmd.BASE_POSITION_COMMAND[0]);
-        DataTransform(posi_obj[0].Data, cmd.BASE_POSITION_COMMAND,
-                      len, LEFT_MOTOR, home[0]);
-        DataTransform(posi_obj[1].Data, cmd.BASE_POSITION_COMMAND,
-                      len, RIGHT_MOTOR, home[1]);
-        DataTransform(posi_obj[2].Data, cmd.BASE_POSITION_COMMAND,
-                      len, LEFT_MOTOR, home[2]);
-        DataTransform(posi_obj[3].Data, cmd.BASE_POSITION_COMMAND,
-                      len, RIGHT_MOTOR, home[3]);
+        DataTransform(posi_obj[0].Data, cmd.BASE_POSITION_COMMAND, len,
+                      LEFT_MOTOR, home[0]);
+        DataTransform(posi_obj[1].Data, cmd.BASE_POSITION_COMMAND, len,
+                      RIGHT_MOTOR, home[1]);
+        DataTransform(posi_obj[2].Data, cmd.BASE_POSITION_COMMAND, len,
+                      LEFT_MOTOR, home[2]);
+        DataTransform(posi_obj[3].Data, cmd.BASE_POSITION_COMMAND, len,
+                      RIGHT_MOTOR, home[3]);
         SendCommand(posi_obj, 4);
 
-        delete [] posi_obj;
-        delete [] rec_obj;
+        delete[] posi_obj;
+        delete[] rec_obj;
         ROS_INFO("Get home position successfully");
         sleep(2);
         break;
       }
-      delete [] rec_obj;
+      delete[] rec_obj;
     }
   }  // end of [while] loop reading position of motors
 }
@@ -1072,7 +1073,7 @@ void MobileMotor::Homing() {
     raw_state.resize(8);
     for (size_t i = 0; i < 4; i++) {
      double abs_ste_ratio = 0.02;
-      steer_p[i] += 
+      steer_p[i] +=
          (delta_p[i] * (float)encoder_s / abs_ste_ratio / (float)abs_encoder);
     }
     raw_state = {0, 0, 0, 0, steer_p[0], steer_p[1], steer_p[2], steer_p[3]};
@@ -1090,16 +1091,26 @@ void MobileMotor::Homing() {
 }
 */
 void MobileMotor::Loop() {
-
-  ros::Subscriber control_pub =
+  control_sub =
       nh.subscribe("cmd_base_joint", 10, &MobileMotor::ControlCallback, this);
-  ros::Subscriber teleop_sub =
+  teleop_sub =
       nh.subscribe("cmd_vel", 10, &MobileMotor::TeleopCallback, this);
-  ros::Subscriber stop_sub =
+  stop_sub =
       nh.subscribe("stop", 10, &MobileMotor::StopCallback, this);
   // ros::Timer feedback_timer =
-  //     nh.createTimer(ros::Duration(0.1), &MobileMotor::FeedbackCallback, this);
-  state_pub_thread = 
+  //     nh.createTimer(ros::Duration(0.1), &MobileMotor::FeedbackCallback,
+  //     this);
+  state_pub_thread =
       new boost::thread(boost::bind(&MobileMotor::FeedbackCallback, this));
-  
+}
+
+void MobileMotor::SubLoop() {
+
+  // while (ros::ok()) 
+  // ros::Subscriber control_sub =
+  //     nh.subscribe("cmd_base_joint", 10, &MobileMotor::ControlCallback, this);
+  // ros::Subscriber teleop_sub =
+  //     nh.subscribe("cmd_vel", 10, &MobileMotor::TeleopCallback, this);
+  // ros::Subscriber stop_sub =
+  //     nh.subscribe("stop", 10, &MobileMotor::StopCallback, this);
 }

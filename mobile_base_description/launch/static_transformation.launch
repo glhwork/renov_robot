@@ -10,9 +10,9 @@
   <node pkg="tf" 
         type="static_transform_publisher" 
         name="link_to_lidar"
-        args="1 2 3 0 0 1.57 base_link base_scan 100"/> 
+        args="0.485 -0.002 0 0 0 3.14159265 base_link base_scan 100"/> 
   <node pkg="tf" 
         type="static_transform_publisher" 
         name="link_to_imu"
-        args="1 2 3 0 0 1.57 base_link base_imu 100"/> 
+        args="0.0385 -0.002 0 -1.5707963 0 0 base_link base_imu 100"/> 
 </launch>

@@ -72,6 +72,7 @@ class MobileMotor {
   void Homing();
 
   void Loop();
+  void SubLoop();
 
  protected:
   // COBID of multiple motor drivers
@@ -147,6 +148,10 @@ class MobileMotor {
   ros::NodeHandle nh;
   ros::NodeHandle n_private;
   ros::Publisher state_pub;
+
+  ros::Subscriber control_sub;
+  ros::Subscriber teleop_sub;
+  ros::Subscriber stop_sub;
 
   /* THREADS */ 
   boost::thread* state_pub_thread;
