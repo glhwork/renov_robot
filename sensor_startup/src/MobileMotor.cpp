@@ -846,10 +846,12 @@ void MobileMotor::Homing() {
   while (true) {
     // loop used to continuously read
     // until data of four encoders are got while (true) {
-    if (ReadEncoder(encod_data)) {
-      break;
+    while (true) {
+      if (ReadEncoder(encod_data)) {
+        break;
+      }
     }
-    int error[4];
+    double error[4];
     float steer_v[4];
 
     for (size_t i = 0; i < 4; i++) {
@@ -866,7 +868,7 @@ void MobileMotor::Homing() {
     }
     for (size_t i = 0; i < 4; i++) {
       double k = 0.02;
-      steer_v[i] = steer_v[i] / abs_encoder / k;
+      steer_v[i] = steer_v[i] / (double)abs_encoder / k / encoder_s;
       error_k2[i] = error_k1[i];
       error_k1[i] = error[i];
     }
