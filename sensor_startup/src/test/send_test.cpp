@@ -37,8 +37,9 @@ void Send(double v_linear, double p_angular, ros::Publisher& pub) {
 
 void StatePlan(ros::Publisher& pub) {
 
-  ros::Duration(3).sleep();
-
+  std::cout << "ready to send" << std::endl;
+  sleep(3);
+/* 
   Send(10, PI/4, pub);
   ros::Duration(5).sleep();
 
@@ -47,6 +48,7 @@ void StatePlan(ros::Publisher& pub) {
 
   Send(40, PI/4, pub);
   ros::Duration(5).sleep();
+ */
 
 }
 
@@ -57,9 +59,13 @@ int main(int argc, char** argv) {
   ros::Publisher pub 
       = nh.advertise<sensor_msgs::JointState>("cmd_base_joint", 100);
   
-  
-  StatePlan(pub);
-  ros::spinOnce();
+  ros::Rate r(10);
+  while (ros::ok) {
+    Send(0, PI/2, pub);
+    ros::spinOnce();
+    r.sleep();
+  }
+  // StatePlan(pub);
 
 
 
