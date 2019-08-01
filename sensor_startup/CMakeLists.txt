@@ -102,3 +102,12 @@ add_executable(limit_switch
 target_link_libraries(limit_switch
   ${catkin_LIBRARIES}
 )
+
+add_executable(remote_control
+  src/remote_control.cpp
+)
+target_link_libraries(remote_control
+  mobile_sensor
+  yaml-cpp
+  ${catkin_LIBRARIES}
+)

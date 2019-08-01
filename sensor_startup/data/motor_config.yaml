@@ -37,10 +37,10 @@ motor_sign:
   rsr: 0  # rear steering right
 
 homing:
-  fl: 25078  # corresponding impulse of steering motor (front left)
-  fr: 27207  # corresponding impulse of steering motor (front right)
-  rl: 27996  # corresponding impulse of steering motor (rear left)
-  rr: 25750  # corresponding impulse of steering motor (rear right)
+  fl: 27118  # corresponding impulse of steering motor (front left)
+  fr: 29262  # corresponding impulse of steering motor (front right)
+  rl: 30036 # corresponding impulse of steering motor (rear left)
+  rr: 27800  # corresponding impulse of steering motor (rear right)
 
 homing_error_limit: 5 
 

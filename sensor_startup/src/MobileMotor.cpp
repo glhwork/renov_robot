@@ -444,10 +444,6 @@ void MobileMotor::TeleopCallback(const geometry_msgs::Twist& twist) {
 }
 
 void MobileMotor::FeedbackCallback() {
-  if (!if_initial) {
-    ROS_WARN("feedback failure caused by initialization failure");
-    return;
-  }
 
   ros::Rate r(1.0 / state_pub_period);
   while (ros::ok()) {
@@ -542,6 +538,9 @@ void MobileMotor::FeedbackCallback() {
     }
 
     if (if_pub) {
+      for (size_t i = 0; i < 8; i++) {
+        state.position[i] = (state.position[i] - home[i]) / encoder_s * (2 * PI);
+      }
       state_pub.publish(state);
       delete[] rec_obj;
     }
@@ -638,7 +637,10 @@ void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
 
       int len = sizeof(cmd.BASE_POSITION_COMMAND) /
                 sizeof(cmd.BASE_POSITION_COMMAND[0]);
-      obj[4].DataLen = obj[5].DataLen = obj[6].DataLen = obj[7].DataLen = len;
+      obj[4].DataLen =
+      obj[5].DataLen = 
+      obj[6].DataLen = 
+      obj[7].DataLen = len;
 
       DataTransform(obj[4].Data, cmd.BASE_POSITION_COMMAND, len, LEFT_MOTOR,
                     state[4]);

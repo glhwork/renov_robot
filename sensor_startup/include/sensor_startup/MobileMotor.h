@@ -88,6 +88,14 @@ class MobileMotor {
   // id_num means the quantity of motor-drivers we use
   int id_num;
 
+  bool if_initial;
+  // homing position
+  int home[4];
+  // lines of encoders
+  uint encoder_s;
+  uint encoder_w;
+  uint abs_encoder;
+
  private:
 
   /* LAUNCH PARAMETERS */
@@ -118,10 +126,7 @@ class MobileMotor {
   int steering_mode;
   int walking_mode;
 
-  // lines of encoders
-  uint encoder_s;
-  uint encoder_w;
-  uint abs_encoder;
+  
   // reduction ratio of steering or walking motors
   double reduc_ratio_s;
   double reduc_ratio_w;
@@ -129,8 +134,6 @@ class MobileMotor {
   uint max_velocity;
   // command sign of each motor
   int motor_sign[8];
-  // homing position
-  int home[4];
   // homing value of absolute encoder
   int abs_home[4];
   // error limit to judge whether steering motor finishes homing
@@ -142,9 +145,6 @@ class MobileMotor {
 
   
   /* GLOBAL VARIABLES */
-  bool if_initial;
-
-
   ros::NodeHandle nh;
   ros::NodeHandle n_private;
   ros::Publisher state_pub;
