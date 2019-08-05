@@ -9,9 +9,23 @@ MobileMotor::MobileMotor() {
   Setup();
   if_initial = DriverInit();
   state_pub_thread = NULL;
+
+  tf::Quaternion init_quat;
+  init_quat.setRPY(0, 0, 0);
+
+  tf::Transform init_trans(init_quat, tf::Vector3(0, 0, 0));
+  tf::TransformBroadcaster init_broad;
+
+  cur_time = ros::Time::now().toSec();
+  tf::StampedTransform init_trans_stamped(init_trans, ros::Time(0), "map", "odom");
+  init_broad.sendTransform(init_trans_stamped);
 }
 
-MobileMotor::~MobileMotor() { delete state_pub_thread; }
+MobileMotor::~MobileMotor() { 
+
+  delete state_pub_thread; 
+
+}
 
 void MobileMotor::ParamInit() {
   if (!n_private.getParam("port", port)) {
@@ -497,6 +511,10 @@ void MobileMotor::FeedbackCallback() {
       // if ((REC_BASE_ID + cob_id[3]) == rec_obj[i].ID) {
 
       // }
+      if (0x00000701 == rec_obj[i].ID || 0x00000702 == rec_obj[i].ID ||
+          0x00000703 == rec_obj[i].ID || 0x00000704 == rec_obj[i].ID) {
+        continue;
+      }
       if (LEFT_MOTOR == rec_obj[i].Data[2]) {
         if (POSITION_FD == rec_obj[i].Data[1]) {
           int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);

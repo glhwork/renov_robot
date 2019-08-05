@@ -26,8 +26,9 @@ class Tele : public MobileMotor {
       // SetTeleopMode();
       ReadTeleopFile(); 
       veh_pose = Pose2d(0, 0, 0, 0, 0, 0);
+      fb_thread = NULL;
     }
-    virtual ~Tele() {}
+    virtual ~Tele() { delete fb_thread; }
     // void SetTeleopMode();
     void ReadTeleopFile();
     void SendTf(const std::vector<float>& raw_state, const double& dt);
@@ -39,9 +40,10 @@ class Tele : public MobileMotor {
   private:
     double wheel_dis_len;
     double wheel_dis_wid;
-    double pre_time;
+    // double pre_time;
     std::vector<double> cur_state;
     Pose2d veh_pose;  // pose of vehicle
+    boost::thread* fb_thread;
 
     ros::NodeHandle nh;
     ros::Subscriber stop_sub;
@@ -116,7 +118,7 @@ void Tele::TeleFeedback(const double& period) {
       continue;
     }
     FeedbackReq();
-    double odom_time = ros::Time::now().toSec();
+    cur_time = ros::Time::now().toSec();
 
     uint data_num;
     data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
@@ -150,18 +152,6 @@ void Tele::TeleFeedback(const double& period) {
     state.velocity = {10000.0, 10000.0, 10000.0, 10000.0,
                       10000.0, 10000.0, 10000.0, 10000.0};
     for (size_t i = 0; i < data_num; i++) {
-      // if ((REC_BASE_ID + cob_id[0]) == rec_obj[i].ID) {
-
-      // }
-      // if ((REC_BASE_ID + cob_id[1]) == rec_obj[i].ID) {
-
-      // }
-      // if ((REC_BASE_ID + cob_id[2]) == rec_obj[i].ID) {
-
-      // }
-      // if ((REC_BASE_ID + cob_id[3]) == rec_obj[i].ID) {
-
-      // }
       if (LEFT_MOTOR == rec_obj[i].Data[2]) {
         if (POSITION_FD == rec_obj[i].Data[1]) {
           int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
@@ -210,11 +200,12 @@ void Tele::TeleFeedback(const double& period) {
                    (float)state.position[4], (float)state.position[5],
                    (float)state.position[6], (float)state.position[7]};
       //  this scheme might be incorrect
-      if (pre_time != 0.0) { 
-        double dt = odom_time - pre_time;
-        SendTf(raw_state, dt);
-      }
-      pre_time = odom_time;
+      
+       
+      double dt = cur_time - pre_time;
+      SendTf(raw_state, dt);
+      
+      pre_time = cur_time;
       delete[] rec_obj;
     }
     r.sleep();
@@ -243,7 +234,7 @@ void Tele::SendTf(const std::vector<float>& raw_state, const double& dt) {
   double v = raw_state[0] * PI * 0.15 / 60 / encoder_w;  // velocity per second
   double theta_d = v / r;
 
-  int p_e = 10;  // permitted error
+  int p_e = 100;  // permitted error
   if (abs(home[0] - raw_state[4]) < p_e && abs(home[1] - raw_state[5]) < p_e &&
       abs(home[2] - raw_state[6]) < p_e && abs(home[3] - raw_state[7]) < p_e) {
     veh_pose.x += v * cos(veh_pose.yaw) * dt;
@@ -267,6 +258,9 @@ void Tele::Loop() {
  
   stop_sub = nh.subscribe("stop", 100, &Tele::TeleStop, this);
   tele_sub = nh.subscribe("cmd_vel", 100, &Tele::TeleControl, this);
+
+  double period = 0.1;
+  fb_thread = new boost::thread(boost::bind(&Tele::TeleFeedback, this, period));
 }
 
 }  // namespace mobile

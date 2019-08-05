@@ -12,6 +12,8 @@
 #include "yaml-cpp/yaml.h"
 
 #include "ros/ros.h"
+#include "tf/transform_broadcaster.h"
+#include "tf/transform_listener.h"
 #include "std_msgs/Bool.h"
 #include "sensor_msgs/JointState.h"
 #include "geometry_msgs/Twist.h"
@@ -95,6 +97,9 @@ class MobileMotor {
   uint encoder_s;
   uint encoder_w;
   uint abs_encoder;
+
+  double pre_time;
+  double cur_time;
 
  private:
 
