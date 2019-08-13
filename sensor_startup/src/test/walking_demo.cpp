@@ -212,7 +212,7 @@ void Demo::Rotary(const double& a) {
 
   float alpha = fabs(atan(wheel_dis_len / wheel_dis_wid));
   float v_linear = a * r/(0.15/2);
-  float n = v_linear * 60 / (2 * PI);
+  float n = v_linear * 60 / (2 * M_PI);
   js.velocity.resize(8);
   js.position.resize(8);
 
@@ -282,7 +282,7 @@ void Demo::Lateral(const double& v) {
   js.velocity.resize(8);
   js.position.resize(8);
 
-  double angle = -0.5 * PI;
+  double angle = -0.5 * M_PI;
   js.position = {0, 0, 0, 0, angle, angle, angle, angle};
   js.velocity = {v, v, v, v, 0, 0, 0, 0};
 

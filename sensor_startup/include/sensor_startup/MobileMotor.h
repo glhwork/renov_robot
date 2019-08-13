@@ -22,12 +22,6 @@
 #include "CanAssist.h"
 #include "controlcan.h"
 
-#define PI 3.141592653
-
-/* code refactoring !!!! */
-
-
-
 namespace mobile {
 
 struct IdConfig {

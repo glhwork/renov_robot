@@ -1,8 +1,6 @@
 #include "ros/ros.h"
 #include "sensor_msgs/JointState.h"
 
-#define PI 3.141592653
-
 void Send(double v_linear, double p_angular, ros::Publisher& pub) {
   sensor_msgs::JointState js;
   js.header.frame_id = "motor";
@@ -40,13 +38,13 @@ void StatePlan(ros::Publisher& pub) {
   std::cout << "ready to send" << std::endl;
   sleep(3);
 /* 
-  Send(10, PI/4, pub);
+  Send(10, M_PI/4, pub);
   ros::Duration(5).sleep();
 
-  Send(20, PI/4, pub);
+  Send(20, M_PI/4, pub);
   ros::Duration(5).sleep();
 
-  Send(40, PI/4, pub);
+  Send(40, M_PI/4, pub);
   ros::Duration(5).sleep();
  */
 
@@ -61,7 +59,7 @@ int main(int argc, char** argv) {
   
   ros::Rate r(10);
   while (ros::ok) {
-    Send(0, PI/2, pub);
+    Send(0, M_PI/2, pub);
     ros::spinOnce();
     r.sleep();
   }

@@ -231,7 +231,7 @@ void Tele::SendTf(const std::vector<float>& raw_state, const double& dt) {
 
   double hypotenuse = sqrt(pow(wheel_dis_len, 2) + pow(wheel_dis_wid, 2));
   double r = 0.5 * hypotenuse;
-  double v = raw_state[0] * PI * 0.15 / 60 / encoder_w;  // velocity per second
+  double v = raw_state[0] * M_PI * 0.15 / 60 / encoder_w;  // velocity per second
   double theta_d = v / r;
 
   int p_e = 100;  // permitted error
