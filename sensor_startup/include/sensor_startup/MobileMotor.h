@@ -12,11 +12,11 @@
 #include "yaml-cpp/yaml.h"
 
 #include "ros/ros.h"
-#include "tf/transform_broadcaster.h"
-#include "tf/transform_listener.h"
 #include "std_msgs/Bool.h"
 #include "sensor_msgs/JointState.h"
 #include "geometry_msgs/Twist.h"
+#include "tf/transform_listener.h"
+#include "tf/transform_broadcaster.h"
 #include "serial/serial.h"
 
 #include "CanAssist.h"
@@ -89,17 +89,9 @@ class MobileMotor {
   int can_index;
   // id_num means the quantity of motor-drivers we use
   int id_num;
-
-  bool if_initial;
-  // homing position
-  int home[4];
-  // lines of encoders
-  uint encoder_s;
-  uint encoder_w;
-  uint abs_encoder;
-
-  double pre_time;
+  
   double cur_time;
+  double pre_time;
 
  private:
 
@@ -117,9 +109,6 @@ class MobileMotor {
   // the publish period of motor states
   double state_pub_period;
 
-  
-
- 
 
   /* CONFIG PARAMETERS */
   YAML::Node param;
@@ -131,7 +120,12 @@ class MobileMotor {
   int steering_mode;
   int walking_mode;
 
-  
+ protected:
+  // lines of encoders
+  uint encoder_s;
+  uint encoder_w;
+  uint abs_encoder;
+ private:
   // reduction ratio of steering or walking motors
   double reduc_ratio_s;
   double reduc_ratio_w;
@@ -139,6 +133,10 @@ class MobileMotor {
   uint max_velocity;
   // command sign of each motor
   int motor_sign[8];
+ protected:
+  // homing position
+  int home[4];
+ private:
   // homing value of absolute encoder
   int abs_home[4];
   // error limit to judge whether steering motor finishes homing
@@ -150,6 +148,10 @@ class MobileMotor {
 
   
   /* GLOBAL VARIABLES */
+ protected:
+  bool if_initial;
+ private:
+
   ros::NodeHandle nh;
   ros::NodeHandle n_private;
   ros::Publisher state_pub;

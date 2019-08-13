@@ -858,26 +858,26 @@ bool MobileMotor::ReadEncoder(int* encod_data) {
 }
 
 void MobileMotor::Homing() {
-  int mode_len = sizeof(cmd.SET_MODE_VELOCITY) / 
-                 sizeof(cmd.SET_MODE_VELOCITY[0]);
-  ModeCommand(cob_id[2], cob_id[3], mode_len, VELOCITY_MODE);
+  int len = sizeof(cmd.SET_MODE_VELOCITY) / 
+            sizeof(cmd.SET_MODE_VELOCITY[0]);
+  ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
 
   int* encod_data = new int;
-  int error_k1[4];
-  int error_k2[4];
+  double error_k1[4];
+  double error_k2[4];
+  
+  int home_count = 0;
   while (true) {
     // loop used to continuously read
     // until data of four encoders are got while (true) {
-    while (true) {
-      if (ReadEncoder(encod_data)) {
-        break;
-      }
+    if (!ReadEncoder(encod_data)) {
+      continue;
     }
     double error[4];
     float steer_v[4];
 
     for (size_t i = 0; i < 4; i++) {
-      error[i] = encod_data[i] - abs_home[i];
+      error[i] = (encod_data[i] - abs_home[i]) * 1.0;
       if (abs(error[i]) <= error_limit) {
         steer_v[i] = 0.0;
       } else {
@@ -885,15 +885,21 @@ void MobileMotor::Homing() {
         K[0] = home_kp + home_ki + home_kd;
         K[1] = home_kp + 2 * home_kd;
         K[3] = home_kd;
-        steer_v[i] = K[0] * error[i] - K[1] * error_k1[i] + K[2] * error_k2[i];
+        steer_v[i] = home_kp * (error[i] - error_k1[i]) + 
+                     home_ki * error[i] + 
+                     home_kd * (error[i] - 2 * error_k1[i] + error_k2[i]);
       }
     }
+    
     for (size_t i = 0; i < 4; i++) {
       double k = 0.02;
-      steer_v[i] = steer_v[i] / (double)abs_encoder / k / encoder_s;
+      steer_v[i] = steer_v[i] / (double)abs_encoder / k / (double)encoder_s;
       error_k2[i] = error_k1[i];
       error_k1[i] = error[i];
     }
+    ROS_INFO("abs home is : %d, %d, %d, %d", abs_home[0], abs_home[1],abs_home[2],abs_home[3]);
+    ROS_INFO("steer_v is : %f, %f, %f, %f", steer_v[0], steer_v[1],steer_v[2],steer_v[3]);
+    ROS_INFO("error is : %f, %f, %f, %f", error[0], error[1],error[2],error[3]);
 
     walking_mode = VELOCITY_MODE;
     steering_mode = VELOCITY_MODE;
@@ -901,12 +907,13 @@ void MobileMotor::Homing() {
     std::vector<float> raw_state;
     raw_state.resize(8);
     raw_state = {0, 0, 0, 0, steer_v[0], steer_v[1], steer_v[2], steer_v[3]};
+
     ControlMotor(raw_state);
 
+    std::cout << "======================" << std::endl;
     if (steer_v[0] == 0.0 && steer_v[1] == 0.0 && steer_v[2] == 0.0 &&
         steer_v[3] == 0.0) {
       ROS_INFO("homing finish !!");
-      int len;
       break;
     }
   }
