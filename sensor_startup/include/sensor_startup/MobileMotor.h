@@ -74,7 +74,6 @@ class MobileMotor {
   void Homing();
 
   void Loop();
-  void SubLoop();
 
  protected:
   // COBID of multiple motor drivers

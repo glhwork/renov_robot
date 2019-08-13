@@ -1030,14 +1030,3 @@ void MobileMotor::Loop() {
   state_pub_thread =
       new boost::thread(boost::bind(&MobileMotor::FeedbackCallback, this));
 }
-
-void MobileMotor::SubLoop() {
-
-  // while (ros::ok()) 
-  // ros::Subscriber control_sub =
-  //     nh.subscribe("cmd_base_joint", 10, &MobileMotor::ControlCallback, this);
-  // ros::Subscriber teleop_sub =
-  //     nh.subscribe("cmd_vel", 10, &MobileMotor::TeleopCallback, this);
-  // ros::Subscriber stop_sub =
-  //     nh.subscribe("stop", 10, &MobileMotor::StopCallback, this);
-}
