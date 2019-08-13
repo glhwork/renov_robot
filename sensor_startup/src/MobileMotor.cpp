@@ -557,7 +557,7 @@ void MobileMotor::FeedbackCallback() {
 
     if (if_pub) {
       for (size_t i = 0; i < 8; i++) {
-        state.position[i] = (state.position[i] - home[i]) / encoder_s * (2 * PI);
+        state.position[i] = (state.position[i] - home[i]) / encoder_s * (2 * M_PI);
       }
       state_pub.publish(state);
       delete[] rec_obj;
@@ -718,7 +718,7 @@ std::vector<int> MobileMotor::CommandTransform(
 
   // determine the steering command
   for (size_t i = 4; i < 8; i++) {
-    double data = raw_state[i] * reduc_ratio_s * encoder_s / (2 * PI);
+    double data = raw_state[i] * reduc_ratio_s * encoder_s / (2 * M_PI);
     int tmp = home[i - 4] + (int)data * pow(-1, motor_sign[i] + 1);
     state.push_back(tmp);
   }
