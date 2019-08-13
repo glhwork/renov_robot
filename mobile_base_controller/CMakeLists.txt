@@ -33,19 +33,11 @@ add_library(mobile_control
   src/Model.cpp
   src/MoveBase.cpp
 )
-target_link_libraries(mobile_control
-  yaml-cpp
+target_link_libraries(mobile_control 
+  yaml-cpp 
   ${catkin_LIBRARIES}
 )
 
-add_executable(move_base
-  src/move_base.cpp
-  src/Model.cpp
-  src/MoveBase.cpp
-)
-target_link_libraries(move_base
-  mobile_control
-  yaml-cpp
-  ${catkin_LIBRARIES}
-)
+add_executable(move_base src/move_base.cpp)
+target_link_libraries(move_base mobile_control yaml-cpp ${catkin_LIBRARIES})
 
