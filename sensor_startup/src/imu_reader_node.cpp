@@ -1,6 +1,6 @@
-#include "sensor_startup/MobileImu.h"
+#include "sensor_startup/ImuReader.h"
 
-using mobile::MobileImu;
+using mobile_base::ImuReader; 
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "imu_core");
@@ -11,10 +11,10 @@ int main(int argc, char** argv) {
     imu_pub_rate = 10;
   }
 
-  MobileImu imu;
+  ImuReader imu_reader;
   ros::Rate r(imu_pub_rate);
   while (ros::ok()) {
-    imu.ReadData();
+    imu_reader.ReadData();
     ros::spinOnce();
     r.sleep();
   }

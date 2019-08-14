@@ -1,5 +1,5 @@
-#ifndef MOBILEIMU_H
-#define MOBILEIMU_H
+#ifndef IMUREADER_H
+#define IMUREADER_H
 
 #include <string>
 #include <sstream>
@@ -11,7 +11,7 @@
 
 // considering neccessity of null drift compensation 
 
-namespace mobile {
+namespace mobile_base {
 
 struct ImuCommand {
   uint8_t OUTPUT_FREQUENCY_00HZ[6] = {0x68, 0x05, 0x00, 0x0c, 0x00, 0x11};
@@ -31,10 +31,10 @@ struct ImuCommand {
   uint8_t RESET_EULER_ANGLE[5] = {0x68, 0x04, 0x00, 0x28, 0x0c};
 };  // struct ImuCommand
 
-class MobileImu {
+class ImuReader {
  public:
-  MobileImu();
-  ~MobileImu() {}
+  ImuReader();
+  ~ImuReader() {}
   void SerialInit();
   void ParamInit();
   void Setup();
@@ -55,9 +55,9 @@ class MobileImu {
   ros::NodeHandle n_private;
   ros::NodeHandle nh;
   ros::Publisher imu_pub;
-};  // class MobileImu
+};  // class ImuReader
 
-}  // namespace mobile
+}  // namespace mobile_base
 
 
 

@@ -1,8 +1,8 @@
-#include "sensor_startup/MobileImu.h"
+#include "sensor_startup/ImuReader.h"
 
-using mobile::MobileImu;
+using mobile_base::ImuReader;
 
-MobileImu::MobileImu() {
+ImuReader::ImuReader() {
 
   n_private = ros::NodeHandle("imu");
   ParamInit();
@@ -16,7 +16,7 @@ MobileImu::MobileImu() {
 
 }
 
-void MobileImu::SerialInit() {
+void ImuReader::SerialInit() {
 
   try {
     imu_ser.setPort(port_id);
@@ -94,7 +94,7 @@ void MobileImu::SerialInit() {
 
 }
 
-void MobileImu::ParamInit() {
+void ImuReader::ParamInit() {
   
   if (!n_private.getParam("port_id", port_id)) {
     port_id = "/dev/ttyUSB0";
@@ -117,11 +117,11 @@ void MobileImu::ParamInit() {
 
 }
 
-void MobileImu::Setup() {
+void ImuReader::Setup() {
   imu_pub = n_private.advertise<sensor_msgs::Imu>(imu_pub_topic, 100);
 }
 
-void MobileImu::ReadData() {
+void ImuReader::ReadData() {
 
   if (use_request) {
     imu_ser.write(cmd.ASK_FOR_DATA, sizeof(cmd.ASK_FOR_DATA));
@@ -142,7 +142,7 @@ void MobileImu::ReadData() {
   }
 }
 
-void MobileImu::DataParser(const std::vector<uint8_t>& data) {
+void ImuReader::DataParser(const std::vector<uint8_t>& data) {
 
   // vec = {roll/pitch/yaw, acc_x/_y/_z, angular_vx/_vy/_vz}
   Eigen::VectorXd vec(9);
@@ -195,7 +195,7 @@ void MobileImu::DataParser(const std::vector<uint8_t>& data) {
 
 }
 
-int MobileImu::Converter(const uint8_t a, const uint8_t b, const uint8_t c) {
+int ImuReader::Converter(const uint8_t a, const uint8_t b, const uint8_t c) {
 
   std::stringstream int2str, str2int;
   int2str << (int)a%16 << (int)b/16 << (int)b%16 << (int)c/16 << (int)c%16;
