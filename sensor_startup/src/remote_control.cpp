@@ -1,11 +1,11 @@
 #include <cmath>
-#include "sensor_startup/MobileMotor.h"
+#include "sensor_startup/motor_reader.h"
 #include "tf/transform_listener.h"
 #include "tf/transform_broadcaster.h"
 
 
 
-namespace mobile {
+namespace mobile_base {
 
 struct Pose2d {
   Pose2d() {}
@@ -20,9 +20,9 @@ struct Pose2d {
   double yaw;
 };
 
-class Tele : public MobileMotor {
+class Tele : public MotorReader {
   public:
-    Tele() : MobileMotor() { 
+    Tele() : MotorReader() { 
       // SetTeleopMode();
       ReadTeleopFile(); 
       veh_pose = Pose2d(0, 0, 0, 0, 0, 0);
@@ -269,8 +269,8 @@ void Tele::Loop() {
 int main(int argc, char** argv) {
   ros::init(argc, argv, "teleop_node");
 
-  mobile::Tele tele;
-  // ros::Subscriber stop_sub = n.subscribe("stop", 100, &mobile::MobileMotor::StopCallback, &motor);
+  mobile_base::Tele tele;
+  // ros::Subscriber stop_sub = n.subscribe("stop", 100, &mobile::MotorReader::StopCallback, &motor);
 
   tele.Loop();
   ros::spin();

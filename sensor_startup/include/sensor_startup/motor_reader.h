@@ -1,5 +1,5 @@
-#ifndef MOBILEMOTOR_H
-#define MOBILEMOTOR_H
+#ifndef MOTOR_READER_H
+#define MOTOR_READER_H
 
 #include <iostream>
 #include <cmath>
@@ -15,6 +15,7 @@
 #include "std_msgs/Bool.h"
 #include "sensor_msgs/JointState.h"
 #include "geometry_msgs/Twist.h"
+#include "nav_msgs/Odometry.h"
 #include "tf/transform_listener.h"
 #include "tf/transform_broadcaster.h"
 #include "serial/serial.h"
@@ -22,7 +23,7 @@
 #include "CanAssist.h"
 #include "controlcan.h"
 
-namespace mobile {
+namespace mobile_base {
 
 struct IdConfig {
   int walk_chn1;
@@ -31,10 +32,15 @@ struct IdConfig {
   int steer_chn2;
 };
 
-class MobileMotor {
+enum MotionMode {
+  FORWARD,
+  ROTATE
+};
+
+class MotorReader {
  public:
-  MobileMotor();
-  virtual ~MobileMotor();
+  MotorReader();
+  virtual ~MotorReader();
   void ParamInit();
   void ReadFile(const std::string& address);
   void Setup();
@@ -67,6 +73,9 @@ class MobileMotor {
   bool ReadEncoder(int* encod_data);
   void Homing();
 
+  void PublishOdometry(const sensor_msgs::JointState& joint_state);
+  double GetVariance(const std::vector<double>& data_vec);
+  double ComputeMean(const std::vector<double>& data_vec);
   void Loop();
 
  protected:
@@ -83,8 +92,10 @@ class MobileMotor {
   // id_num means the quantity of motor-drivers we use
   int id_num;
   
-  double cur_time;
-  double pre_time;
+  // double cur_time;
+  // double pre_time;
+  ros::Time cur_time;
+  ros::Time pre_time;
 
  private:
 
@@ -93,6 +104,8 @@ class MobileMotor {
   std::string port;
   // topic used to publish joint states
   std::string state_topic;
+  // topic used to publish raw odometry
+  std::string raw_odom_topic;
   // address of yaml file containing motor driver configurations
   std::string file_address;
   // delay time used to pause between two commands
@@ -118,6 +131,7 @@ class MobileMotor {
   uint encoder_s;
   uint encoder_w;
   uint abs_encoder;
+  int freq_multiplier;
  private:
   // reduction ratio of steering or walking motors
   double reduc_ratio_s;
@@ -134,6 +148,7 @@ class MobileMotor {
   int abs_home[4];
   // error limit to judge whether steering motor finishes homing
   int error_limit;
+  double variance_limit;
   // PID parameters in homing process
   double home_kp;
   double home_ki;
@@ -148,17 +163,20 @@ class MobileMotor {
   ros::NodeHandle nh;
   ros::NodeHandle n_private;
   ros::Publisher state_pub;
+  ros::Publisher raw_odom_pub;
 
   ros::Subscriber control_sub;
   ros::Subscriber teleop_sub;
   ros::Subscriber stop_sub;
 
+  // nav_msgs::Odometry raw_odom;
+  nav_msgs::Odometry filtered_odom;
   /* THREADS */ 
   boost::thread* state_pub_thread;
 
 
-};  // class MobileMotor
+};  // class MotorReader
 
-}  // namespace mobile
+}  // namespace mobile_base
 
 #endif

@@ -1,9 +1,9 @@
-#include "sensor_startup/MobileMotor.h"
+#include "sensor_startup/motor_reader.h"
 
-using mobile::MobileMotor;
+using mobile_base::MotorReader;
 
-MobileMotor::MobileMotor() {
-  n_private = ros::NodeHandle("motor_core");
+MotorReader::MotorReader() {
+  n_private = ros::NodeHandle("~");
   ParamInit();
   ReadFile(file_address);
   Setup();
@@ -16,23 +16,27 @@ MobileMotor::MobileMotor() {
   tf::Transform init_trans(init_quat, tf::Vector3(0, 0, 0));
   tf::TransformBroadcaster init_broad;
 
-  cur_time = ros::Time::now().toSec();
-  tf::StampedTransform init_trans_stamped(init_trans, ros::Time(0), "map", "odom");
+  cur_time = ros::Time::now();
+  tf::StampedTransform init_trans_stamped(init_trans, ros::Time(0), "map",
+                                          "odom");
   init_broad.sendTransform(init_trans_stamped);
 }
 
-MobileMotor::~MobileMotor() { 
-
-  delete state_pub_thread; 
-
+MotorReader::~MotorReader() {
+  if (state_pub_thread) {
+    delete state_pub_thread;
+  }
 }
 
-void MobileMotor::ParamInit() {
+void MotorReader::ParamInit() {
   if (!n_private.getParam("port", port)) {
     port = "/dev/ttyUSB0";
   }
   if (!n_private.getParam("state_topic", state_topic)) {
     state_topic = "motor_state";
+  }
+  if (!n_private.getParam("raw_odom_topic", raw_odom_topic)) {
+    raw_odom_topic = "raw_odom";
   }
   if (!n_private.getParam("file_address", file_address)) {
     file_address =
@@ -50,7 +54,7 @@ void MobileMotor::ParamInit() {
   }
 }
 
-void MobileMotor::ReadFile(const std::string& address) {
+void MotorReader::ReadFile(const std::string& address) {
   std::cout << " address is : " << address << std::endl;
   param = YAML::LoadFile(address);
 
@@ -66,6 +70,8 @@ void MobileMotor::ReadFile(const std::string& address) {
   encoder_w = (uint)param["encoder_w"].as<int>();
   abs_encoder = (uint)param["abs_encoder"].as<int>();
   max_velocity = (uint)param["max_velocity"].as<int>();
+  freq_multiplier = param["frequency_multiplier"].as<int>();
+  variance_limit = param["variance_limit"].as<double>();
 
   cob_id[0] = param["walking_channel"]["chn1"].as<int>();
   cob_id[1] = param["walking_channel"]["chn2"].as<int>();
@@ -97,11 +103,12 @@ void MobileMotor::ReadFile(const std::string& address) {
   IdCheck();
 }
 
-void MobileMotor::Setup() {
+void MotorReader::Setup() {
   state_pub = nh.advertise<sensor_msgs::JointState>(state_topic, 100);
+  raw_odom_pub = nh.advertise<nav_msgs::Odometry>(raw_odom_topic, 100);
 }
 
-bool MobileMotor::DriverInit() {
+bool MotorReader::DriverInit() {
   int flag;
   flag = VCI_OpenDevice(device_type, device_index, 0);
   if (-1 == flag || 0 == flag) {
@@ -156,9 +163,10 @@ bool MobileMotor::DriverInit() {
   return true;
 }
 
-bool MobileMotor::SetMode() {
+bool MotorReader::SetMode() {
   // set mode of walking motors
-  switch (walking_mode) { case POSITION_MODE: {
+  switch (walking_mode) {
+    case POSITION_MODE: {
       int len;
 
       // pre-set the velocity under position mode
@@ -259,7 +267,7 @@ bool MobileMotor::SetMode() {
   return true;
 }
 
-void MobileMotor::ModeCommand(const int& id_0, const int& id_1, const int& len,
+void MotorReader::ModeCommand(const int& id_0, const int& id_1, const int& len,
                               const uint8_t& mode) {
   int obj_num = 2;
   PVCI_CAN_OBJ obj = GetVciObject(obj_num);
@@ -297,7 +305,7 @@ void MobileMotor::ModeCommand(const int& id_0, const int& id_1, const int& len,
   delete[] obj;
 }
 
-bool MobileMotor::EnableMotor() {
+bool MotorReader::EnableMotor() {
   // number of enable commands
   int ena_cmd_num = 3;
   PVCI_CAN_OBJ obj = GetVciObject(id_num * ena_cmd_num);
@@ -332,7 +340,7 @@ bool MobileMotor::EnableMotor() {
   }
 }
 
-void MobileMotor::DataInitial(BYTE* data, uint8_t* cmd, const uint& len) {
+void MotorReader::DataInitial(BYTE* data, uint8_t* cmd, const uint& len) {
   // std::cout << "initial data : ";
   for (size_t i = 0; i < len; i++) {
     data[i] = cmd[i];
@@ -341,7 +349,7 @@ void MobileMotor::DataInitial(BYTE* data, uint8_t* cmd, const uint& len) {
   // std::cout << std::endl;
 }
 
-VCI_CAN_OBJ* MobileMotor::GetVciObject(const int& obj_num) {
+VCI_CAN_OBJ* MotorReader::GetVciObject(const int& obj_num) {
   PVCI_CAN_OBJ obj_ptr;
   obj_ptr = new VCI_CAN_OBJ[obj_num];
   for (size_t i = 0; i < obj_num; i++) {
@@ -355,7 +363,7 @@ VCI_CAN_OBJ* MobileMotor::GetVciObject(const int& obj_num) {
   return obj_ptr;
 }
 
-void MobileMotor::IdCheck() {
+void MotorReader::IdCheck() {
   bool flag = true;
   int n = sizeof(cob_id) / sizeof(cob_id[0]);
   for (size_t i = 0; i < n; i++) {
@@ -375,7 +383,7 @@ void MobileMotor::IdCheck() {
   }
 }
 
-bool MobileMotor::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
+bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
   // VCI_Transmit(device_type, device_index, can_index, obj, len);
 
   if (0 != delay_time) {
@@ -398,7 +406,7 @@ bool MobileMotor::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
   return true;
 }
 
-void MobileMotor::ControlCallback(const sensor_msgs::JointState& joint_state) {
+void MotorReader::ControlCallback(const sensor_msgs::JointState& joint_state) {
   if (!if_initial) {
     ROS_WARN("control failure caused by initialization failure");
     return;
@@ -421,7 +429,7 @@ void MobileMotor::ControlCallback(const sensor_msgs::JointState& joint_state) {
   ControlMotor(state_cmds);
 }
 
-void MobileMotor::DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
+void MotorReader::DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
                                 const uint8_t& index, const int& velo) {
   DataInitial(data, cmd, len);
   data[2] = index;
@@ -450,15 +458,14 @@ void MobileMotor::DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
   }
 }
 
-void MobileMotor::TeleopCallback(const geometry_msgs::Twist& twist) {
+void MotorReader::TeleopCallback(const geometry_msgs::Twist& twist) {
   if (!if_initial) {
     ROS_WARN("teleop failure caused by initialization failure");
     return;
   }
 }
 
-void MobileMotor::FeedbackCallback() {
-
+void MotorReader::FeedbackCallback() {
   ros::Rate r(1.0 / state_pub_period);
   while (ros::ok()) {
     if (!if_initial) {
@@ -511,8 +518,10 @@ void MobileMotor::FeedbackCallback() {
       // if ((REC_BASE_ID + cob_id[3]) == rec_obj[i].ID) {
 
       // }
-      if (0x00000701 == rec_obj[i].ID || 0x00000702 == rec_obj[i].ID ||
-          0x00000703 == rec_obj[i].ID || 0x00000704 == rec_obj[i].ID) {
+      if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
+          0x00000700 + cob_id[1] == rec_obj[i].ID ||
+          0x00000700 + cob_id[2] == rec_obj[i].ID ||
+          0x00000700 + cob_id[3] == rec_obj[i].ID) {
         continue;
       }
       if (LEFT_MOTOR == rec_obj[i].Data[2]) {
@@ -557,8 +566,12 @@ void MobileMotor::FeedbackCallback() {
 
     if (if_pub) {
       for (size_t i = 0; i < 8; i++) {
-        state.position[i] = (state.position[i] - home[i]) / encoder_s * (2 * M_PI);
+        state.position[i] = (state.position[i] - home[i]) /
+                            (freq_multiplier * encoder_s) * (2 * M_PI);
+        state.velocity[i] = state.velocity[i] / reduc_ratio_w;
       }
+      
+      PublishOdometry(state);
       state_pub.publish(state);
       delete[] rec_obj;
     }
@@ -566,7 +579,7 @@ void MobileMotor::FeedbackCallback() {
   }
 }
 
-void MobileMotor::FeedbackReq() {
+void MotorReader::FeedbackReq() {
   PVCI_CAN_OBJ obj = GetVciObject(id_num * 4);
   for (size_t i = 0; i < id_num; i++) {
     int len;
@@ -601,7 +614,7 @@ void MobileMotor::FeedbackReq() {
   delete[] obj;
 }
 
-void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
+void MotorReader::ControlMotor(const std::vector<float>& raw_state) {
   std::vector<int> state = CommandTransform(raw_state);
 
   // 0->left, 1->right for walking driver 1 front
@@ -655,10 +668,7 @@ void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
 
       int len = sizeof(cmd.BASE_POSITION_COMMAND) /
                 sizeof(cmd.BASE_POSITION_COMMAND[0]);
-      obj[4].DataLen =
-      obj[5].DataLen = 
-      obj[6].DataLen = 
-      obj[7].DataLen = len;
+      obj[4].DataLen = obj[5].DataLen = obj[6].DataLen = obj[7].DataLen = len;
 
       DataTransform(obj[4].Data, cmd.BASE_POSITION_COMMAND, len, LEFT_MOTOR,
                     state[4]);
@@ -705,7 +715,7 @@ void MobileMotor::ControlMotor(const std::vector<float>& raw_state) {
   delete[] obj;
 }
 
-std::vector<int> MobileMotor::CommandTransform(
+std::vector<int> MotorReader::CommandTransform(
     const std::vector<float>& raw_state) {
   std::vector<int> state;
 
@@ -725,7 +735,7 @@ std::vector<int> MobileMotor::CommandTransform(
   return state;
 }
 
-void MobileMotor::StopMotor() {
+void MotorReader::StopMotor() {
   int len;
 
   // send command to disenable the drivers
@@ -765,9 +775,9 @@ void MobileMotor::StopMotor() {
   }
 }
 
-void MobileMotor::StopCallback(const std_msgs::Bool& stop) { StopMotor(); }
+void MotorReader::StopCallback(const std_msgs::Bool& stop) { StopMotor(); }
 
-void MobileMotor::PrintTest(BYTE* data, const int& len,
+void MotorReader::PrintTest(BYTE* data, const int& len,
                             const std::string& str) {
   std::cout << str << "  ";
   for (size_t i = 0; i < len; i++) {
@@ -777,7 +787,7 @@ void MobileMotor::PrintTest(BYTE* data, const int& len,
 }
 
 /* apply encoders to help process homing */
-int MobileMotor::FourByteHex2Int(uint8_t* data) {
+int MotorReader::FourByteHex2Int(uint8_t* data) {
   int result;
   result = (data[3] << 24) + (data[2] << 16) + (data[1] << 8) + (data[0] << 0);
   if (0x80000000 && result) {
@@ -786,10 +796,9 @@ int MobileMotor::FourByteHex2Int(uint8_t* data) {
   return result;
 }
 
-bool MobileMotor::ReadEncoder(int* encod_data) {
+bool MotorReader::ReadEncoder(int* encod_data) {
   PVCI_CAN_OBJ cmd_obj = GetVciObject(4);
-  int len = sizeof(cmd.REQUEST_ENCODER_1) / 
-            sizeof(cmd.REQUEST_ENCODER_1[0]);
+  int len = sizeof(cmd.REQUEST_ENCODER_1) / sizeof(cmd.REQUEST_ENCODER_1[0]);
   for (size_t i = 0; i < 4; i++) {
     cmd_obj[i].ID = i + 1;
     cmd_obj[i].DataLen = len;
@@ -857,15 +866,14 @@ bool MobileMotor::ReadEncoder(int* encod_data) {
   }
 }
 
-void MobileMotor::Homing() {
-  int len = sizeof(cmd.SET_MODE_VELOCITY) / 
-            sizeof(cmd.SET_MODE_VELOCITY[0]);
+void MotorReader::Homing() {
+  int len = sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
   ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
 
   int* encod_data = new int;
   double error_k1[4];
   double error_k2[4];
-  
+
   int home_count = 0;
   while (true) {
     // loop used to continuously read
@@ -885,21 +893,23 @@ void MobileMotor::Homing() {
         K[0] = home_kp + home_ki + home_kd;
         K[1] = home_kp + 2 * home_kd;
         K[3] = home_kd;
-        steer_v[i] = home_kp * (error[i] - error_k1[i]) + 
-                     home_ki * error[i] + 
+        steer_v[i] = home_kp * (error[i] - error_k1[i]) + home_ki * error[i] +
                      home_kd * (error[i] - 2 * error_k1[i] + error_k2[i]);
       }
     }
-    
+
     for (size_t i = 0; i < 4; i++) {
       double k = 0.02;
       steer_v[i] = steer_v[i] / (double)abs_encoder / k / (double)encoder_s;
       error_k2[i] = error_k1[i];
       error_k1[i] = error[i];
     }
-    ROS_INFO("abs home is : %d, %d, %d, %d", abs_home[0], abs_home[1],abs_home[2],abs_home[3]);
-    ROS_INFO("steer_v is : %f, %f, %f, %f", steer_v[0], steer_v[1],steer_v[2],steer_v[3]);
-    ROS_INFO("error is : %f, %f, %f, %f", error[0], error[1],error[2],error[3]);
+    ROS_INFO("abs home is : %d, %d, %d, %d", abs_home[0], abs_home[1],
+             abs_home[2], abs_home[3]);
+    ROS_INFO("steer_v is : %f, %f, %f, %f", steer_v[0], steer_v[1], steer_v[2],
+             steer_v[3]);
+    ROS_INFO("error is : %f, %f, %f, %f", error[0], error[1], error[2],
+             error[3]);
 
     walking_mode = VELOCITY_MODE;
     steering_mode = VELOCITY_MODE;
@@ -985,16 +995,14 @@ void MobileMotor::Homing() {
         // restore the control mode of motors
         steering_mode = POSITION_MODE;
         walking_mode = VELOCITY_MODE;
-        int len_tmp = sizeof(cmd.SET_MODE_POSITION) / 
-                      sizeof(cmd.SET_MODE_POSITION[0]);
+        int len_tmp =
+            sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
         ModeCommand(cob_id[2], cob_id[3], len_tmp, POSITION_MODE);
 
         int posi_cmd_len = sizeof(cmd.BASE_POSITION_COMMAND) /
                            sizeof(cmd.BASE_POSITION_COMMAND[0]);
-        posi_obj[0].DataLen =
-        posi_obj[1].DataLen =
-        posi_obj[2].DataLen =
-        posi_obj[3].DataLen = posi_cmd_len;
+        posi_obj[0].DataLen = posi_obj[1].DataLen = posi_obj[2].DataLen =
+            posi_obj[3].DataLen = posi_cmd_len;
 
         DataTransform(posi_obj[0].Data, cmd.BASE_POSITION_COMMAND, posi_cmd_len,
                       LEFT_MOTOR, home[0]);
@@ -1017,16 +1025,117 @@ void MobileMotor::Homing() {
   }  // end of [while] loop reading position of motors
 }
 
-void MobileMotor::Loop() {
+double MotorReader::GetVariance(const std::vector<double>& data_vec) {
+  double mean = ComputeMean(data_vec);
+  double diff_sqr_sum = 0.0;
+  for (size_t i = 0; i < data_vec.size(); i++) {
+    diff_sqr_sum += pow((data_vec[i] - mean), 2);
+  }
+  double variance = diff_sqr_sum / data_vec.size();
+  return variance;
+}
+
+double MotorReader::ComputeMean(const std::vector<double>& data_vec) {
+  double sum = 0.0;
+  for (size_t i = 0; i < data_vec.size(); i++) {
+    sum += data_vec[i];
+  }
+  double mean = sum / data_vec.size();
+  return mean;
+}
+
+void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
+  std::vector<double> velocity_state_vec = {
+      joint_state.velocity[0], joint_state.velocity[1], joint_state.velocity[2],
+      joint_state.velocity[3]};
+  double walking_variance = GetVariance(velocity_state_vec);
+
+  tf::Quaternion quat_tmp(filtered_odom.pose.pose.orientation.x,
+                          filtered_odom.pose.pose.orientation.y,
+                          filtered_odom.pose.pose.orientation.z,
+                          filtered_odom.pose.pose.orientation.w);
+  tf::Matrix3x3 rpy_matrix(quat_tmp);
+  double roll, pitch, yaw;
+  rpy_matrix.getRPY(roll, pitch, yaw);
+
+  std::vector<double> position_state_vec = {
+      joint_state.position[4], joint_state.position[5], joint_state.position[6],
+      joint_state.position[7]};
+  double steer_angle_mean = ComputeMean(position_state_vec);
+
+  double velocity_mean = ComputeMean(joint_state.velocity);
+  double dt = cur_time.toSec() - filtered_odom.header.stamp.toSec();
+
+  /* remember to delete these variables */
+  double preset_angle;
+  double wheel_radius;
+  double rotate_radius;
+  /*  */
+
+  bool if_rotate = true;
+  for (size_t i = 0; i < position_state_vec.size(); i++) {
+    if_rotate =
+        if_rotate && (fabs(fabs(preset_angle) - fabs(position_state_vec[i])) <
+                      variance_limit);
+  }
+
+  nav_msgs::Odometry raw_odom;
+  raw_odom = filtered_odom;
+  raw_odom.header.stamp = cur_time;
+  if (sqrt(walking_variance) < variance_limit) {
+    raw_odom.pose.pose.position.x =
+        raw_odom.pose.pose.position.x +
+        velocity_mean * cos(steer_angle_mean + yaw) * dt;
+    raw_odom.pose.pose.position.y =
+        raw_odom.pose.pose.position.y +
+        velocity_mean * sin(steer_angle_mean + yaw) * dt;
+    raw_odom.pose.pose.position.z = 0.0;
+    raw_odom.twist.twist.linear.x = velocity_mean * cos(steer_angle_mean + yaw);
+    raw_odom.twist.twist.linear.y = velocity_mean * sin(steer_angle_mean + yaw);
+    raw_odom.twist.twist.linear.z = 0;
+    raw_odom.twist.twist.angular.x = 
+    raw_odom.twist.twist.angular.y =
+    raw_odom.twist.twist.angular.z = 0.0;
+
+    raw_odom_pub.publish(raw_odom);
+  } else if (if_rotate) {
+    double angular_v = velocity_mean * wheel_radius / rotate_radius;
+    if (velocity_state_vec[0] > 0) {
+      angular_v = -fabs(angular_v);
+    } else {
+      angular_v = fabs(angular_v);
+    }
+    tf::Quaternion q =
+        tf::createQuaternionFromRPY(roll, pitch, yaw + angular_v * dt);
+    raw_odom.pose.pose.position.z = 0.0;
+
+    // difference between q.x() and q.getX()
+    raw_odom.pose.pose.orientation.x = q.x();
+    raw_odom.pose.pose.orientation.y = q.y();
+    raw_odom.pose.pose.orientation.z = q.z();
+    raw_odom.pose.pose.orientation.w = q.w();
+
+    raw_odom.twist.twist.linear.x = 
+    raw_odom.twist.twist.linear.y =
+    raw_odom.twist.twist.linear.z = 0.0;
+    raw_odom.twist.twist.angular.x = 
+    raw_odom.twist.twist.angular.y = 0.0;
+    raw_odom.twist.twist.angular.z = angular_v;
+
+    raw_odom_pub.publish(raw_odom);
+  } else {
+    raw_odom_pub.publish(raw_odom);
+  }
+}
+
+void MotorReader::Loop() {
   control_sub =
-      nh.subscribe("cmd_base_joint", 10, &MobileMotor::ControlCallback, this);
-  teleop_sub =
-      nh.subscribe("cmd_vel", 10, &MobileMotor::TeleopCallback, this);
-  stop_sub =
-      nh.subscribe("stop", 10, &MobileMotor::StopCallback, this);
+      nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback, this);
+  teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback, this);
+  stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback, this);
   // ros::Timer feedback_timer =
-  //     nh.createTimer(ros::Duration(0.1), &MobileMotor::FeedbackCallback,
+  //     nh.createTimer(ros::Duration(0.1), &MotorReader::FeedbackCallback,
   //     this);
   state_pub_thread =
-      new boost::thread(boost::bind(&MobileMotor::FeedbackCallback, this));
+      new boost::thread(boost::bind(&MotorReader::FeedbackCallback, this));
 }

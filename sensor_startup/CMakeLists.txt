@@ -27,28 +27,28 @@ include_directories(include lib ${catkin_INCLUDE_DIRS})
 link_directories(lib)
 
 # define the library used in sensor communication
-add_library(mobile_sensor
-  src/MobileImu.cpp
-  src/MobileMotor.cpp
+add_library(sensor_reader
+  src/imu_reader.cpp
+  src/motor_reader.cpp
 )
-target_link_libraries(mobile_sensor
+target_link_libraries(sensor_reader
   yaml-cpp
   controlcan
   ${catkin_LIBRARIES}
 )
 
 # define the imu node
-add_executable(imu_core src/imu_core.cpp)
-target_link_libraries(imu_core
-  mobile_sensor
+add_executable(imu_reader_node src/imu_reader_node.cpp)
+target_link_libraries(imu_reader_node
+  sensor_reader
   controlcan
   ${catkin_LIBRARIES}
 )
 
 # define the motor data node
-add_executable(motor_core src/motor_core.cpp)
-target_link_libraries(motor_core
-  mobile_sensor
+add_executable(motor_reader_node src/motor_reader_node.cpp)
+target_link_libraries(motor_reader_node
+  sensor_reader
   yaml-cpp
   controlcan
   ${catkin_LIBRARIES} 
@@ -71,7 +71,7 @@ target_link_libraries(limit_switch ${catkin_LIBRARIES})
 
 add_executable(remote_control src/remote_control.cpp)
 target_link_libraries(remote_control
-  mobile_sensor
+  sensor_reader
   yaml-cpp
   ${catkin_LIBRARIES}
 )

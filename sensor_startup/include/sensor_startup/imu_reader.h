@@ -1,5 +1,5 @@
-#ifndef IMUREADER_H
-#define IMUREADER_H
+#ifndef IMU_READER_H
+#define IMU_READER_H
 
 #include <string>
 #include <sstream>

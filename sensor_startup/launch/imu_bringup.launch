@@ -1,5 +1,5 @@
 <launch>
-  <param name="imu_pub_rate" value="100"/>
+  <param name="imu_publish_rate" value="100"/>
   <node pkg="sensor_startup" type="imu_core" name="imu" output="screen">
     <param name="port_id" value="/dev/ttyUSB0" />
     <param name="baud_rate" value="115200" />
