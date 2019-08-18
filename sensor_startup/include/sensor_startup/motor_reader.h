@@ -13,6 +13,7 @@
 
 #include "ros/ros.h"
 #include "std_msgs/Bool.h"
+#include "std_msgs/Int64MultiArray.h"
 #include "sensor_msgs/JointState.h"
 #include "geometry_msgs/Twist.h"
 #include "nav_msgs/Odometry.h"
@@ -74,9 +75,12 @@ class MotorReader {
   void Homing();
 
   void PublishOdometry(const sensor_msgs::JointState& joint_state);
+  void OdomCallback(const nav_msgs::Odometry& odom_msg);
   double GetVariance(const std::vector<double>& data_vec);
   double ComputeMean(const std::vector<double>& data_vec);
   void Loop();
+
+  void GetHomeCallback(const std_msgs::Int64MultiArray& home_state);
 
  protected:
   // COBID of multiple motor drivers
@@ -147,7 +151,7 @@ class MotorReader {
   // homing value of absolute encoder
   int abs_home[4];
   // error limit to judge whether steering motor finishes homing
-  int error_limit;
+  int homing_error_limit;
   double variance_limit;
   // PID parameters in homing process
   double home_kp;
@@ -158,6 +162,11 @@ class MotorReader {
   /* GLOBAL VARIABLES */
  protected:
   bool if_initial;
+  bool if_home_finish;
+  bool if_get_initial_ekf_odom;
+  double preset_steer_angle;
+  double base_rotate_radius;
+  double wheel_radius;
  private:
 
   ros::NodeHandle nh;
@@ -168,6 +177,8 @@ class MotorReader {
   ros::Subscriber control_sub;
   ros::Subscriber teleop_sub;
   ros::Subscriber stop_sub;
+  ros::Subscriber odom_sub;
+  ros::Subscriber home_sub;
 
   // nav_msgs::Odometry raw_odom;
   nav_msgs::Odometry filtered_odom;

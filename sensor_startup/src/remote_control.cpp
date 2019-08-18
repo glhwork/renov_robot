@@ -118,7 +118,7 @@ void Tele::TeleFeedback(const double& period) {
       continue;
     }
     FeedbackReq();
-    cur_time = ros::Time::now().toSec();
+    // cur_time = ros::Time::now().toSec();
 
     uint data_num;
     data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
@@ -202,8 +202,8 @@ void Tele::TeleFeedback(const double& period) {
       //  this scheme might be incorrect
       
        
-      double dt = cur_time - pre_time;
-      SendTf(raw_state, dt);
+      // double dt = cur_time - pre_time;
+      // SendTf(raw_state, dt);
       
       pre_time = cur_time;
       delete[] rec_obj;

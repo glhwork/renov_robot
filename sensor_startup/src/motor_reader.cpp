@@ -8,18 +8,26 @@ MotorReader::MotorReader() {
   ReadFile(file_address);
   Setup();
   if_initial = DriverInit();
+  if_home_finish = false;
+  if_get_initial_ekf_odom = false;
   state_pub_thread = NULL;
 
-  tf::Quaternion init_quat;
-  init_quat.setRPY(0, 0, 0);
+  double frt = param["front_rear_track"].as<double>();
+  double lrt = param["left_right_track"].as<double>();
 
-  tf::Transform init_trans(init_quat, tf::Vector3(0, 0, 0));
-  tf::TransformBroadcaster init_broad;
+  preset_steer_angle = fabs(atan(frt / lrt));
+  base_rotate_radius = 0.5 * sqrt(pow(frt, 2) + pow(lrt, 2));
 
-  cur_time = ros::Time::now();
-  tf::StampedTransform init_trans_stamped(init_trans, ros::Time(0), "map",
-                                          "odom");
-  init_broad.sendTransform(init_trans_stamped);
+  // tf::Quaternion init_quat;
+  // init_quat.setRPY(0, 0, 0);
+
+  // tf::Transform init_trans(init_quat, tf::Vector3(0, 0, 0));
+  // tf::TransformBroadcaster init_broad;
+
+  // cur_time = ros::Time::now();
+  // tf::StampedTransform init_trans_stamped(init_trans, ros::Time(0), "map",
+  //                                         "odom");
+  // init_broad.sendTransform(init_trans_stamped);
 }
 
 MotorReader::~MotorReader() {
@@ -92,13 +100,15 @@ void MotorReader::ReadFile(const std::string& address) {
   abs_home[2] = param["homing"]["rl"].as<int>();
   abs_home[3] = param["homing"]["rr"].as<int>();
 
-  error_limit = param["homing_error_limit"].as<int>();
+  homing_error_limit = param["homing_error_limit"].as<int>();
   home_kp = param["home_control"]["p"].as<double>();
   home_ki = param["home_control"]["i"].as<double>();
   home_kd = param["home_control"]["d"].as<double>();
 
   reduc_ratio_s = param["reduc_ratio_s"].as<double>();
   reduc_ratio_w = param["reduc_ratio_w"].as<double>();
+
+  wheel_radius = param["wheel_radius"].as<double>();
 
   IdCheck();
 }
@@ -149,7 +159,7 @@ bool MotorReader::DriverInit() {
     ROS_INFO("enable motors success!");
   }
 
-  Homing();
+  // Homing();
 
   steering_mode = param["steering_mode"].as<int>();
   walking_mode = param["walking_mode"].as<int>();
@@ -411,6 +421,9 @@ void MotorReader::ControlCallback(const sensor_msgs::JointState& joint_state) {
     ROS_WARN("control failure caused by initialization failure");
     return;
   }
+  if (!if_get_initial_ekf_odom) {
+    return;
+  }
 
   if (joint_state.velocity.size() < 8 || joint_state.position.size() < 8) {
     ROS_WARN("Incorrect quantity of commands");
@@ -470,6 +483,9 @@ void MotorReader::FeedbackCallback() {
   while (ros::ok()) {
     if (!if_initial) {
       ROS_WARN("feedback failure caused by initialization failure");
+      continue;
+    }
+    if (!if_get_initial_ekf_odom) {
       continue;
     }
     FeedbackReq();
@@ -570,7 +586,7 @@ void MotorReader::FeedbackCallback() {
                             (freq_multiplier * encoder_s) * (2 * M_PI);
         state.velocity[i] = state.velocity[i] / reduc_ratio_w;
       }
-      
+
       PublishOdometry(state);
       state_pub.publish(state);
       delete[] rec_obj;
@@ -886,7 +902,7 @@ void MotorReader::Homing() {
 
     for (size_t i = 0; i < 4; i++) {
       error[i] = (encod_data[i] - abs_home[i]) * 1.0;
-      if (abs(error[i]) <= error_limit) {
+      if (abs(error[i]) <= homing_error_limit) {
         steer_v[i] = 0.0;
       } else {
         double K[3];
@@ -1045,10 +1061,10 @@ double MotorReader::ComputeMean(const std::vector<double>& data_vec) {
 }
 
 void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
-  std::vector<double> velocity_state_vec = {
+  std::vector<double> motor_velocity_vec = {
       joint_state.velocity[0], joint_state.velocity[1], joint_state.velocity[2],
       joint_state.velocity[3]};
-  double walking_variance = GetVariance(velocity_state_vec);
+  double walking_variance = GetVariance(motor_velocity_vec);
 
   tf::Quaternion quat_tmp(filtered_odom.pose.pose.orientation.x,
                           filtered_odom.pose.pose.orientation.y,
@@ -1058,25 +1074,19 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
   double roll, pitch, yaw;
   rpy_matrix.getRPY(roll, pitch, yaw);
 
-  std::vector<double> position_state_vec = {
+  std::vector<double> motor_position_vec = {
       joint_state.position[4], joint_state.position[5], joint_state.position[6],
       joint_state.position[7]};
-  double steer_angle_mean = ComputeMean(position_state_vec);
+  double steer_angle_mean = ComputeMean(motor_position_vec);
 
-  double velocity_mean = ComputeMean(joint_state.velocity);
+  double motor_velo_mean = ComputeMean(joint_state.velocity);
   double dt = cur_time.toSec() - filtered_odom.header.stamp.toSec();
 
-  /* remember to delete these variables */
-  double preset_angle;
-  double wheel_radius;
-  double rotate_radius;
-  /*  */
-
   bool if_rotate = true;
-  for (size_t i = 0; i < position_state_vec.size(); i++) {
-    if_rotate =
-        if_rotate && (fabs(fabs(preset_angle) - fabs(position_state_vec[i])) <
-                      variance_limit);
+  for (size_t i = 0; i < motor_position_vec.size(); i++) {
+    if_rotate = if_rotate &&
+                (fabs(fabs(preset_steer_angle) - fabs(motor_position_vec[i])) <
+                 variance_limit);
   }
 
   nav_msgs::Odometry raw_odom;
@@ -1085,22 +1095,23 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
   if (sqrt(walking_variance) < variance_limit) {
     raw_odom.pose.pose.position.x =
         raw_odom.pose.pose.position.x +
-        velocity_mean * cos(steer_angle_mean + yaw) * dt;
+        motor_velo_mean * cos(steer_angle_mean + yaw) * dt;
     raw_odom.pose.pose.position.y =
         raw_odom.pose.pose.position.y +
-        velocity_mean * sin(steer_angle_mean + yaw) * dt;
+        motor_velo_mean * sin(steer_angle_mean + yaw) * dt;
     raw_odom.pose.pose.position.z = 0.0;
-    raw_odom.twist.twist.linear.x = velocity_mean * cos(steer_angle_mean + yaw);
-    raw_odom.twist.twist.linear.y = velocity_mean * sin(steer_angle_mean + yaw);
+    raw_odom.twist.twist.linear.x =
+        motor_velo_mean * cos(steer_angle_mean + yaw);
+    raw_odom.twist.twist.linear.y =
+        motor_velo_mean * sin(steer_angle_mean + yaw);
     raw_odom.twist.twist.linear.z = 0;
-    raw_odom.twist.twist.angular.x = 
-    raw_odom.twist.twist.angular.y =
-    raw_odom.twist.twist.angular.z = 0.0;
+    raw_odom.twist.twist.angular.x = raw_odom.twist.twist.angular.y =
+        raw_odom.twist.twist.angular.z = 0.0;
 
     raw_odom_pub.publish(raw_odom);
   } else if (if_rotate) {
-    double angular_v = velocity_mean * wheel_radius / rotate_radius;
-    if (velocity_state_vec[0] > 0) {
+    double angular_v = motor_velo_mean * wheel_radius / base_rotate_radius;
+    if (motor_velocity_vec[0] > 0) {
       angular_v = -fabs(angular_v);
     } else {
       angular_v = fabs(angular_v);
@@ -1115,11 +1126,9 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
     raw_odom.pose.pose.orientation.z = q.z();
     raw_odom.pose.pose.orientation.w = q.w();
 
-    raw_odom.twist.twist.linear.x = 
-    raw_odom.twist.twist.linear.y =
-    raw_odom.twist.twist.linear.z = 0.0;
-    raw_odom.twist.twist.angular.x = 
-    raw_odom.twist.twist.angular.y = 0.0;
+    raw_odom.twist.twist.linear.x = raw_odom.twist.twist.linear.y =
+        raw_odom.twist.twist.linear.z = 0.0;
+    raw_odom.twist.twist.angular.x = raw_odom.twist.twist.angular.y = 0.0;
     raw_odom.twist.twist.angular.z = angular_v;
 
     raw_odom_pub.publish(raw_odom);
@@ -1128,11 +1137,69 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
   }
 }
 
+void MotorReader::OdomCallback(const nav_msgs::Odometry& odom_msg) {
+  if (if_home_finish) {
+    filtered_odom = odom_msg;
+    if_get_initial_ekf_odom = true;
+  }
+}
+
+void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
+  if (!if_home_finish) {
+    for (size_t i = 0; i < home_state.data.size(); i++) {
+      home[i] = home_state.data[i];
+    }
+
+    cur_time = ros::Time::now();
+    nav_msgs::Odometry init_odom;
+    init_odom.header.frame_id = "odom";
+    init_odom.header.stamp = cur_time;
+    init_odom.child_frame_id = "base_footprint";
+
+    init_odom.pose.pose.position.x = init_odom.pose.pose.position.y =
+        init_odom.pose.pose.position.z = 0.0;
+
+    init_odom.pose.pose.orientation.x = init_odom.pose.pose.orientation.y =
+        init_odom.pose.pose.orientation.z = 0.0;
+    init_odom.pose.pose.orientation.w = 1.0;
+
+    for (size_t i = 0; i < init_odom.pose.covariance.size(); i++) {
+      if (i % 7 == 0) {
+        init_odom.pose.covariance[i] = 1e-4;
+      }
+    }
+
+    init_odom.twist.twist.linear.x = init_odom.twist.twist.linear.y =
+        init_odom.twist.twist.linear.z = 0.0;
+
+    init_odom.twist.twist.angular.x = init_odom.twist.twist.angular.y =
+        init_odom.twist.twist.angular.z = 0.0;
+
+    for (size_t i = 0; i < init_odom.twist.covariance.size(); i++) {
+      if (i % 7 == 0) {
+        init_odom.twist.covariance[i] = 1e-4;
+      }
+    }
+
+    sleep(2);
+    ROS_INFO(
+        "wait for 2 seconds and publish initial odometry info to "
+        "robot_poes_ekf node");
+    raw_odom_pub.publish(init_odom);
+
+    if_home_finish = true;
+  }
+}
+
 void MotorReader::Loop() {
   control_sub =
       nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback, this);
+  home_sub =
+      nh.subscribe("home_position", 10, &MotorReader::GetHomeCallback, this);
   teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback, this);
   stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback, this);
+  odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback, this);
+
   // ros::Timer feedback_timer =
   //     nh.createTimer(ros::Duration(0.1), &MotorReader::FeedbackCallback,
   //     this);

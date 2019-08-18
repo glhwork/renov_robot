@@ -3,7 +3,6 @@
 using mobile_base::ImuReader;
 
 ImuReader::ImuReader() {
-
   n_private = ros::NodeHandle("imu");
   ParamInit();
   SerialInit();
@@ -13,11 +12,9 @@ ImuReader::ImuReader() {
   std::cout << baud_rate << std::endl;
   std::cout << imu_frame_id << std::endl;
   std::cout << imu_pub_topic << std::endl;
-
 }
 
 void ImuReader::SerialInit() {
-
   try {
     imu_ser.setPort(port_id);
     imu_ser.setBaudrate(baud_rate);
@@ -27,7 +24,7 @@ void ImuReader::SerialInit() {
     imu_ser.open();
   } catch (const serial::IOException& e) {
     ROS_ERROR("Unable to open port on %s -> [%s]", port_id, e.what());
-    return ;
+    return;
   }
   if (imu_ser.isOpen()) {
     ROS_INFO("Open serial port successfully");
@@ -71,9 +68,8 @@ void ImuReader::SerialInit() {
           ROS_WARN("incorrect frequency number");
           exit(1);
           break;
-        } 
+        }
       }
-
     }
     /*
     std::vector<uint8_t> reply;
@@ -86,16 +82,14 @@ void ImuReader::SerialInit() {
       ROS_INFO("Set imu reply frequency failed");
     }
     */
-        
+
   } else {
     ROS_WARN("Port opening failed!");
-    return ;
+    return;
   }
-
 }
 
 void ImuReader::ParamInit() {
-  
   if (!n_private.getParam("port_id", port_id)) {
     port_id = "/dev/ttyUSB0";
   }
@@ -114,7 +108,6 @@ void ImuReader::ParamInit() {
   if (!n_private.getParam("output_freq", output_freq)) {
     output_freq = 50;
   }
-
 }
 
 void ImuReader::Setup() {
@@ -122,7 +115,6 @@ void ImuReader::Setup() {
 }
 
 void ImuReader::ReadData() {
-
   if (use_request) {
     imu_ser.write(cmd.ASK_FOR_DATA, sizeof(cmd.ASK_FOR_DATA));
 
@@ -137,28 +129,27 @@ void ImuReader::ReadData() {
   } else {
     std::vector<uint8_t> imu_data;
     imu_ser.read(imu_data, 32);
-    //imu_ser.flushInput();
+    // imu_ser.flushInput();
     DataParser(imu_data);
   }
 }
 
 void ImuReader::DataParser(const std::vector<uint8_t>& data) {
-
   // vec = {roll/pitch/yaw, acc_x/_y/_z, angular_vx/_vy/_vz}
   Eigen::VectorXd vec(9);
   if (data.size() == 32) {
-    vec(0) = (double)Converter(data[4], data[5], data[6])/100.0;
-    vec(1) = (double)Converter(data[7], data[8], data[9])/100.0;
-    vec(2) = (double)Converter(data[10], data[11], data[12])/100.0;
+    vec(0) = (double)Converter(data[4], data[5], data[6]) / 100.0;
+    vec(1) = (double)Converter(data[7], data[8], data[9]) / 100.0;
+    vec(2) = (double)Converter(data[10], data[11], data[12]) / 100.0;
 
     // attention : computing acceleration should divide 1000
-    vec(3) = (double)Converter(data[13], data[14], data[15])/1000.0;
-    vec(4) = (double)Converter(data[16], data[17], data[18])/1000.0;
-    vec(5) = (double)Converter(data[19], data[20], data[21])/1000.0;
+    vec(3) = (double)Converter(data[13], data[14], data[15]) / 1000.0;
+    vec(4) = (double)Converter(data[16], data[17], data[18]) / 1000.0;
+    vec(5) = (double)Converter(data[19], data[20], data[21]) / 1000.0;
 
-    vec(6) = (double)Converter(data[22], data[23], data[24])/100.0;
-    vec(7) = (double)Converter(data[25], data[26], data[27])/100.0;
-    vec(8) = (double)Converter(data[28], data[29], data[30])/100.0;
+    vec(6) = (double)Converter(data[22], data[23], data[24]) / 100.0;
+    vec(7) = (double)Converter(data[25], data[26], data[27]) / 100.0;
+    vec(8) = (double)Converter(data[28], data[29], data[30]) / 100.0;
 
     sensor_msgs::Imu imu_msg;
     imu_msg.header.frame_id = imu_frame_id;
@@ -172,40 +163,45 @@ void ImuReader::DataParser(const std::vector<uint8_t>& data) {
     imu_msg.orientation.y = q.y();
     imu_msg.orientation.z = q.z();
     imu_msg.orientation.w = q.w();
+    imu_msg.orientation_covariance = {1e-5, 0, 0, 0, 1e-5, 0, 0, 0, 1e-5};
 
     // get angular velocity
     imu_msg.angular_velocity.x = vec(6);
     imu_msg.angular_velocity.y = vec(7);
     imu_msg.angular_velocity.z = vec(8);
+    imu_msg.angular_velocity_covariance = {1e-5, 0, 0, 0, 1e-5, 0, 0, 0, 1e-5};
 
     // get linear acceleration (value * g)
     imu_msg.linear_acceleration.x = vec(3);
     imu_msg.linear_acceleration.y = vec(4);
     imu_msg.linear_acceleration.z = vec(5);
+    imu_msg.linear_acceleration_covariance = {1e-5, 0, 0, 0, 1e-5, 0, 0, 0, 1e-5};
 
-    // printf("angular -> roll: %.2f, pitch: %.2f, yaw: %.2f \n", vec(0), vec(1), vec(2));
-    // printf("quaternion -> x: %.2f, y: %.2f, z: %.2f, w: %.2f \n", q.x(), q.y(), q.z(), q.w());
-    // ROS_INFO("Data : \n angular velocity [x: %.2f, y: %.2f, z: %.2f]\n linear acc [x: %.2f, y: %.2f, z: %.2f]\n orientation [roll: %.2f, pitch: %.2f, yaw: %.2f]",
-    //          vec(6), vec(7), vec(8), vec(3), vec(4), vec(5), vec(0), vec(1), vec(2));
+    // printf("angular -> roll: %.2f, pitch: %.2f, yaw: %.2f \n", vec(0),
+    // vec(1), vec(2)); printf("quaternion -> x: %.2f, y: %.2f, z: %.2f, w: %.2f
+    // \n", q.x(), q.y(), q.z(), q.w()); ROS_INFO("Data : \n angular velocity
+    // [x: %.2f, y: %.2f, z: %.2f]\n linear acc [x: %.2f, y: %.2f, z: %.2f]\n
+    // orientation [roll: %.2f, pitch: %.2f, yaw: %.2f]",
+    //          vec(6), vec(7), vec(8), vec(3), vec(4), vec(5), vec(0), vec(1),
+    //          vec(2));
 
     imu_pub.publish(imu_msg);
   } else {
     ROS_WARN("imu data size = %d is not correct", (int)data.size());
   }
-
 }
 
 int ImuReader::Converter(const uint8_t a, const uint8_t b, const uint8_t c) {
-
   std::stringstream int2str, str2int;
-  int2str << (int)a%16 << (int)b/16 << (int)b%16 << (int)c/16 << (int)c%16;
+  int2str << (int)a % 16 << (int)b / 16 << (int)b % 16 << (int)c / 16
+          << (int)c % 16;
   int int_result;
   std::string str_result;
   int2str >> str_result;
   str2int << str_result;
   str2int >> int_result;
 
-  if (1 == (int)a/16) {
+  if (1 == (int)a / 16) {
     int_result = -int_result;
   } else {
     int_result = abs(int_result);

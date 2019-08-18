@@ -50,3 +50,7 @@ home_control:
   p: 5.0
   i: 2.0
   d: 0.0
+
+front_rear_track: 0.5  # length of mobile_base
+left_right_track: 0.395  # width of mobile_base
+wheel_radius:

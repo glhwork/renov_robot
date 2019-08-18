@@ -75,3 +75,6 @@ target_link_libraries(remote_control
   yaml-cpp
   ${catkin_LIBRARIES}
 )
+
+add_executable(send_teleop_signal src/send_teleop_signal.cpp)
+target_link_libraries(send_teleop_signal yaml-cpp ${catkin_LIBRARIES})
