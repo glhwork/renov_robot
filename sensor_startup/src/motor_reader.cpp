@@ -487,7 +487,7 @@ void MotorReader::FeedbackCallback() {
     }
     if (!if_get_initial_ekf_odom) {
       continue;
-    }
+    }  // test whether this 'if' should be placed outside this while loop
     FeedbackReq();
 
     uint data_num;
@@ -500,9 +500,11 @@ void MotorReader::FeedbackCallback() {
       continue;
     }
 
+    // maybe the 'data_num' could be set as 2500
     PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
     uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
                                data_num, wait_time);
+    cur_time = ros::Time::now();
     if (-1 == rec_num) {
       delete[] rec_obj;
       ROS_WARN("CAN reading of motor feedback failure!");
@@ -522,18 +524,6 @@ void MotorReader::FeedbackCallback() {
     state.velocity = {10000.0, 10000.0, 10000.0, 10000.0,
                       10000.0, 10000.0, 10000.0, 10000.0};
     for (size_t i = 0; i < data_num; i++) {
-      // if ((REC_BASE_ID + cob_id[0]) == rec_obj[i].ID) {
-
-      // }
-      // if ((REC_BASE_ID + cob_id[1]) == rec_obj[i].ID) {
-
-      // }
-      // if ((REC_BASE_ID + cob_id[2]) == rec_obj[i].ID) {
-
-      // }
-      // if ((REC_BASE_ID + cob_id[3]) == rec_obj[i].ID) {
-
-      // }
       if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
           0x00000700 + cob_id[1] == rec_obj[i].ID ||
           0x00000700 + cob_id[2] == rec_obj[i].ID ||
@@ -744,7 +734,8 @@ std::vector<int> MotorReader::CommandTransform(
 
   // determine the steering command
   for (size_t i = 4; i < 8; i++) {
-    double data = raw_state[i] * reduc_ratio_s * encoder_s / (2 * M_PI);
+    double data =
+        raw_state[i] * reduc_ratio_s * encoder_s * freq_multiplier / (2 * M_PI);
     int tmp = home[i - 4] + (int)data * pow(-1, motor_sign[i] + 1);
     state.push_back(tmp);
   }
@@ -1061,26 +1052,33 @@ double MotorReader::ComputeMean(const std::vector<double>& data_vec) {
 }
 
 void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
-  std::vector<double> motor_velocity_vec = {
-      joint_state.velocity[0], joint_state.velocity[1], joint_state.velocity[2],
-      joint_state.velocity[3]};
-  double walking_variance = GetVariance(motor_velocity_vec);
-
-  tf::Quaternion quat_tmp(filtered_odom.pose.pose.orientation.x,
-                          filtered_odom.pose.pose.orientation.y,
-                          filtered_odom.pose.pose.orientation.z,
-                          filtered_odom.pose.pose.orientation.w);
+  // get the latest odometry information
+  nav_msgs::Odometry raw_odom;
+  raw_odom = filtered_odom;
+  ros::Time pre_time = raw_odom.header.stamp;
+  raw_odom.header.stamp = cur_time;
+  tf::Quaternion quat_tmp(
+      raw_odom.pose.pose.orientation.x, raw_odom.pose.pose.orientation.y,
+      raw_odom.pose.pose.orientation.z, raw_odom.pose.pose.orientation.w);
   tf::Matrix3x3 rpy_matrix(quat_tmp);
   double roll, pitch, yaw;
   rpy_matrix.getRPY(roll, pitch, yaw);
 
+  // determine the time between two updates
+  double dt = cur_time.toSec() - pre_time.toSec();
+
   std::vector<double> motor_position_vec = {
       joint_state.position[4], joint_state.position[5], joint_state.position[6],
       joint_state.position[7]};
-  double steer_angle_mean = ComputeMean(motor_position_vec);
-
-  double motor_velo_mean = ComputeMean(joint_state.velocity);
-  double dt = cur_time.toSec() - filtered_odom.header.stamp.toSec();
+  std::vector<double> motor_velocity_vec = {
+      joint_state.velocity[0], joint_state.velocity[1], joint_state.velocity[2],
+      joint_state.velocity[3]};
+  // std::vector<double> abs_motor_position_vec = {
+  //     fabs(joint_state.position[4]), fabs(joint_state.position[5]),
+  //     fabs(joint_state.position[6]), fabs(joint_state.position[7])};
+  std::vector<double> abs_motor_velocity_vec = {
+      fabs(joint_state.velocity[0]), fabs(joint_state.velocity[1]),
+      fabs(joint_state.velocity[2]), fabs(joint_state.velocity[3])};
 
   bool if_rotate = true;
   for (size_t i = 0; i < motor_position_vec.size(); i++) {
@@ -1089,10 +1087,12 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
                  variance_limit);
   }
 
-  nav_msgs::Odometry raw_odom;
-  raw_odom = filtered_odom;
-  raw_odom.header.stamp = cur_time;
-  if (sqrt(walking_variance) < variance_limit) {
+  double motor_velo_mean;
+  double steer_variance = fabs(GetVariance(motor_position_vec));
+  if (sqrt(steer_variance) < variance_limit) {
+    double steer_angle_mean = ComputeMean(motor_position_vec);
+    motor_velo_mean = ComputeMean(motor_velocity_vec);
+    // set position value
     raw_odom.pose.pose.position.x =
         raw_odom.pose.pose.position.x +
         motor_velo_mean * cos(steer_angle_mean + yaw) * dt;
@@ -1100,6 +1100,8 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
         raw_odom.pose.pose.position.y +
         motor_velo_mean * sin(steer_angle_mean + yaw) * dt;
     raw_odom.pose.pose.position.z = 0.0;
+
+    // set velocity value
     raw_odom.twist.twist.linear.x =
         motor_velo_mean * cos(steer_angle_mean + yaw);
     raw_odom.twist.twist.linear.y =
@@ -1110,6 +1112,7 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
 
     raw_odom_pub.publish(raw_odom);
   } else if (if_rotate) {
+    motor_velo_mean = ComputeMean(abs_motor_velocity_vec);
     double angular_v = motor_velo_mean * wheel_radius / base_rotate_radius;
     if (motor_velocity_vec[0] > 0) {
       angular_v = -fabs(angular_v);
@@ -1181,11 +1184,19 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
       }
     }
 
-    sleep(2);
     ROS_INFO(
         "wait for 2 seconds and publish initial odometry info to "
         "robot_poes_ekf node");
+    sleep(2);
+
     raw_odom_pub.publish(init_odom);
+
+    // tell the homing node to stop publish
+    ros::Publisher receive_signal_pub =
+        nh.advertise<std_msgs::Bool>("stop_pub", 10);
+    std_msgs::Bool receive_signal;
+    receive_signal.data = true;
+    receive_signal_pub.publish(receive_signal);
 
     if_home_finish = true;
   }
