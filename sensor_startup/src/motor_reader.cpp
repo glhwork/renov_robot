@@ -1201,6 +1201,42 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     if_home_finish = true;
 
     if_initial = DriverInit();
+
+    if (!if_initial) {
+      ROS_WARN("driver init failure");
+    }
+    // send the current position setting to motor drivers
+    PVCI_CAN_OBJ posi_obj = GetVciObject(4);
+    posi_obj[0].ID += cob_id[2];
+    posi_obj[1].ID += cob_id[2];
+    posi_obj[2].ID += cob_id[3];
+    posi_obj[3].ID += cob_id[3];
+
+    // restore the control mode of motors
+    // steering_mode = POSITION_MODE;
+    // walking_mode = VELOCITY_MODE;
+    int len_tmp =
+        sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
+    ModeCommand(cob_id[2], cob_id[3], len_tmp, POSITION_MODE);
+
+    int posi_cmd_len = sizeof(cmd.BASE_POSITION_COMMAND) /
+                       sizeof(cmd.BASE_POSITION_COMMAND[0]);
+    posi_obj[0].DataLen = posi_obj[1].DataLen = posi_obj[2].DataLen =
+        posi_obj[3].DataLen = posi_cmd_len;
+
+    DataTransform(posi_obj[0].Data, cmd.BASE_POSITION_COMMAND, posi_cmd_len,
+                  LEFT_MOTOR, home[0]);
+    DataTransform(posi_obj[1].Data, cmd.BASE_POSITION_COMMAND, posi_cmd_len,
+                  RIGHT_MOTOR, home[1]);
+    DataTransform(posi_obj[2].Data, cmd.BASE_POSITION_COMMAND, posi_cmd_len,
+                  LEFT_MOTOR, home[2]);
+    DataTransform(posi_obj[3].Data, cmd.BASE_POSITION_COMMAND, posi_cmd_len,
+                  RIGHT_MOTOR, home[3]);
+    SendCommand(posi_obj, 4);
+
+    delete[] posi_obj;
+    ROS_INFO("Get home position successfully");
+    sleep(2);
   }
 }
 
