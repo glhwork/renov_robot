@@ -482,7 +482,7 @@ void MotorReader::FeedbackCallback() {
   ros::Rate r(1.0 / state_pub_period);
   while (ros::ok()) {
     if (!if_initial) {
-      ROS_WARN("feedback failure caused by initialization failure");
+      //ROS_WARN("feedback failure caused by initialization failure");
       continue;
     }
     if (!if_get_initial_ekf_odom) {
@@ -1149,9 +1149,12 @@ void MotorReader::OdomCallback(const nav_msgs::Odometry& odom_msg) {
 
 void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
   if (!if_home_finish) {
+    std::cout << "the home position i got is :";
     for (size_t i = 0; i < home_state.data.size(); i++) {
       home[i] = home_state.data[i];
+      std::cout << home[i] << "  ";
     }
+    std::cout << std::endl;
 
     cur_time = ros::Time::now();
     nav_msgs::Odometry init_odom;
@@ -1187,19 +1190,24 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     ROS_INFO(
         "wait for 2 seconds and publish initial odometry info to "
         "robot_poes_ekf node");
+    std::cout << "after ros info" << std::endl;
     sleep(2);
 
     raw_odom_pub.publish(init_odom);
 
     // tell the homing node to stop publish
     ros::Publisher receive_signal_pub =
-        nh.advertise<std_msgs::Bool>("stop_pub", 10);
+        nh.advertise<std_msgs::Bool>("/close_homing_topic", 10);
     std_msgs::Bool receive_signal;
-    receive_signal.data = true;
+    receive_signal.data = false;
     receive_signal_pub.publish(receive_signal);
+    ros::spinOnce();
 
     if_home_finish = true;
 
+    std::cout << "stop here and type in :";
+    bool program_break;
+    std::cin >> program_break;
     if_initial = DriverInit();
 
     if (!if_initial) {
@@ -1244,7 +1252,7 @@ void MotorReader::Loop() {
   control_sub =
       nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback, this);
   home_sub =
-      nh.subscribe("home_position", 10, &MotorReader::GetHomeCallback, this);
+      nh.subscribe("mobile_platform_driver_position_feedback", 10, &MotorReader::GetHomeCallback, this);
   teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback, this);
   stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback, this);
   odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback, this);
