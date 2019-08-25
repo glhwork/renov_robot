@@ -7,7 +7,7 @@ MotorReader::MotorReader() {
   ParamInit();
   ReadFile(file_address);
   Setup();
-  if_initial = DriverInit();
+  //if_initial = DriverInit();
   if_home_finish = false;
   if_get_initial_ekf_odom = false;
   state_pub_thread = NULL;
@@ -1199,6 +1199,8 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     receive_signal_pub.publish(receive_signal);
 
     if_home_finish = true;
+
+    if_initial = DriverInit();
   }
 }
 
