@@ -7,7 +7,7 @@ MotorReader::MotorReader() {
   ParamInit();
   ReadFile(file_address);
   Setup();
-  //if_initial = DriverInit();
+  // if_initial = DriverInit();
   if_home_finish = false;
   if_get_initial_ekf_odom = false;
   state_pub_thread = NULL;
