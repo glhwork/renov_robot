@@ -18,16 +18,13 @@ MotorReader::MotorReader() {
   preset_steer_angle = fabs(atan(frt / lrt));
   base_rotate_radius = 0.5 * sqrt(pow(frt, 2) + pow(lrt, 2));
 
-  // tf::Quaternion init_quat;
-  // init_quat.setRPY(0, 0, 0);
-
-  // tf::Transform init_trans(init_quat, tf::Vector3(0, 0, 0));
-  // tf::TransformBroadcaster init_broad;
-
-  // cur_time = ros::Time::now();
-  // tf::StampedTransform init_trans_stamped(init_trans, ros::Time(0), "map",
-  //                                         "odom");
-  // init_broad.sendTransform(init_trans_stamped);
+  control_sub =
+      nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback, this);
+  home_sub = nh.subscribe("mobile_platform_driver_position_feedback", 10,
+                          &MotorReader::GetHomeCallback, this);
+  teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback, this);
+  stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback, this);
+  odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback, this);
 }
 
 MotorReader::~MotorReader() {
@@ -482,7 +479,7 @@ void MotorReader::FeedbackCallback() {
   ros::Rate r(1.0 / state_pub_period);
   while (ros::ok()) {
     if (!if_initial) {
-      //ROS_WARN("feedback failure caused by initialization failure");
+      // ROS_WARN("feedback failure caused by initialization failure");
       continue;
     }
     if (!if_get_initial_ekf_odom) {
@@ -1148,6 +1145,8 @@ void MotorReader::OdomCallback(const nav_msgs::Odometry& odom_msg) {
 }
 
 void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
+
+  std::cout << "if home finish is : " << if_home_finish << std::endl;
   if (!if_home_finish) {
     std::cout << "the home position i got is :";
     for (size_t i = 0; i < home_state.data.size(); i++) {
@@ -1201,7 +1200,7 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     std_msgs::Bool receive_signal;
     receive_signal.data = false;
     receive_signal_pub.publish(receive_signal);
-    ros::spinOnce();
+    // ros::spinOnce();
 
     if_home_finish = true;
 
@@ -1213,7 +1212,7 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     if (!if_initial) {
       ROS_WARN("driver init failure");
     }
-    // send the current position setting to motor drivers
+    // send the current position setted to motor drivers
     PVCI_CAN_OBJ posi_obj = GetVciObject(4);
     posi_obj[0].ID += cob_id[2];
     posi_obj[1].ID += cob_id[2];
@@ -1249,13 +1248,15 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
 }
 
 void MotorReader::Loop() {
-  control_sub =
-      nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback, this);
-  home_sub =
-      nh.subscribe("mobile_platform_driver_position_feedback", 10, &MotorReader::GetHomeCallback, this);
-  teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback, this);
-  stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback, this);
-  odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback, this);
+  // control_sub =
+  //     nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback,
+  //     this);
+  // home_sub = nh.subscribe("mobile_platform_driver_position_feedback", 10,
+  //                         &MotorReader::GetHomeCallback, this);
+  // teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback,
+  // this); stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback,
+  // this); odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback,
+  // this);
 
   // ros::Timer feedback_timer =
   //     nh.createTimer(ros::Duration(0.1), &MotorReader::FeedbackCallback,
