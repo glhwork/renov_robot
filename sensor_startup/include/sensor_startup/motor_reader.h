@@ -68,6 +68,7 @@ class MotorReader {
    
   void StopMotor();
   void FeedbackReq();
+  void FeedbackReq(const bool& use_velocity_req, const bool& use_position_req);
   std::vector<int> CommandTransform(const std::vector<float>& raw_state);
   void PrintTest(BYTE* data, const int& len, const std::string& str);
 

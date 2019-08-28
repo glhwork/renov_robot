@@ -18,18 +18,19 @@ MotorReader::MotorReader() {
 
   preset_steer_angle = fabs(atan(frt / lrt));
   base_rotate_radius = 0.5 * sqrt(pow(frt, 2) + pow(lrt, 2));
-/*
-  control_sub =
-      nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback, this);
-  home_sub = nh.subscribe("mobile_platform_driver_position_feedback", 10,
-                          &MotorReader::GetHomeCallback, this);
-  teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback, this);
-  stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback, this);
-  odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback, this);
+  /*
+    control_sub =
+        nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback, this);
+    home_sub = nh.subscribe("mobile_platform_driver_position_feedback", 10,
+                            &MotorReader::GetHomeCallback, this);
+    teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback,
+    this); stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback,
+    this); odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback,
+    this);
 
-  state_pub_thread =
-      new boost::thread(boost::bind(&MotorReader::FeedbackCallback, this));
- */ 
+    state_pub_thread =
+        new boost::thread(boost::bind(&MotorReader::FeedbackCallback, this));
+   */
 }
 
 MotorReader::~MotorReader() {
@@ -148,11 +149,11 @@ bool MotorReader::DriverInit() {
 
   flag = VCI_StartCAN(device_type, device_index, can_index);
   if (-1 == flag || 0 == flag) {
-    //std::cout << "start failure" << std::endl;
+    // std::cout << "start failure" << std::endl;
     ROS_WARN("start failure");
     return false;
   } else if (1 == flag) {
-    //std::cout << "start successfully" << std::endl;
+    // std::cout << "start successfully" << std::endl;
     ROS_INFO("start successfully");
   }
 
@@ -204,7 +205,7 @@ bool MotorReader::SetMode() {
 
       len = sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
       ModeCommand(cob_id[0], cob_id[1], len, POSITION_MODE);
-      //std::cout << "walking mode == position mode" << std::endl;
+      // std::cout << "walking mode == position mode" << std::endl;
       ROS_INFO("walking mode == position mode");
       break;
     }
@@ -212,7 +213,7 @@ bool MotorReader::SetMode() {
       int len =
           sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
       ModeCommand(cob_id[0], cob_id[1], len, VELOCITY_MODE);
-      //std::cout << "walking mode == velocity mode" << std::endl;
+      // std::cout << "walking mode == velocity mode" << std::endl;
       ROS_INFO("walking mode == velocity mode");
       break;
     }
@@ -251,14 +252,14 @@ bool MotorReader::SetMode() {
 
       SendCommand(pre_v, 2);
 
-      //PrintTest(pre_v[0].Data, len, "set profile velocity 1 : ");
-      //PrintTest(pre_v[1].Data, len, "set profile velocity 2 : ");
+      // PrintTest(pre_v[0].Data, len, "set profile velocity 1 : ");
+      // PrintTest(pre_v[1].Data, len, "set profile velocity 2 : ");
 
       delete[] pre_v;
 
       len = sizeof(cmd.SET_MODE_POSITION) / sizeof(cmd.SET_MODE_POSITION[0]);
       ModeCommand(cob_id[2], cob_id[3], len, POSITION_MODE);
-      //std::cout << "steering mode == position mode" << std::endl;
+      // std::cout << "steering mode == position mode" << std::endl;
       ROS_INFO("steering mode == position mode");
       break;
     }
@@ -266,14 +267,14 @@ bool MotorReader::SetMode() {
       int len =
           sizeof(cmd.SET_MODE_VELOCITY) / sizeof(cmd.SET_MODE_VELOCITY[0]);
       ModeCommand(cob_id[2], cob_id[3], len, VELOCITY_MODE);
-      //std::cout << "steering mode == velocity mode" << std::endl;
+      // std::cout << "steering mode == velocity mode" << std::endl;
       ROS_INFO("steering mode == velocity mode");
       break;
     }
     case CURRENT_MODE: {
       int len = sizeof(cmd.SET_MODE_CURRENT) / sizeof(cmd.SET_MODE_CURRENT[0]);
       ModeCommand(cob_id[2], cob_id[3], len, CURRENT_MODE);
-      //std::cout << "steering mode == current mode" << std::endl;
+      // std::cout << "steering mode == current mode" << std::endl;
       ROS_INFO("steering mode == current mode");
       break;
     }
@@ -302,19 +303,19 @@ void MotorReader::ModeCommand(const int& id_0, const int& id_1, const int& len,
     case POSITION_MODE: {
       DataInitial(obj[0].Data, cmd.SET_MODE_POSITION, len);
       DataInitial(obj[1].Data, cmd.SET_MODE_POSITION, len);
-      //PrintTest(obj[0].Data, len, "set position mode : ");
+      // PrintTest(obj[0].Data, len, "set position mode : ");
       break;
     }
     case VELOCITY_MODE: {
       DataInitial(obj[0].Data, cmd.SET_MODE_VELOCITY, len);
       DataInitial(obj[1].Data, cmd.SET_MODE_VELOCITY, len);
-      //PrintTest(obj[0].Data, len, "set velocity mode : ");
+      // PrintTest(obj[0].Data, len, "set velocity mode : ");
       break;
     }
     case CURRENT_MODE: {
       DataInitial(obj[0].Data, cmd.SET_MODE_CURRENT, len);
       DataInitial(obj[1].Data, cmd.SET_MODE_CURRENT, len);
-      //PrintTest(obj[0].Data, len, "set current mode : ");
+      // PrintTest(obj[0].Data, len, "set current mode : ");
       break;
     }
     default: { break; }
@@ -350,7 +351,7 @@ bool MotorReader::EnableMotor() {
                 obj[i * 3 + 2].DataLen);
   }
 
-  //PrintTest(obj[0].Data, obj[0].DataLen, "enable the motor : ");
+  // PrintTest(obj[0].Data, obj[0].DataLen, "enable the motor : ");
   if (!SendCommand(obj, id_num * ena_cmd_num)) {
     delete[] obj;
     return false;
@@ -412,7 +413,7 @@ bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
       info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], 1);
       if (0 == info_num) {
         return false;
-	ROS_WARN("Lose one frame of data");
+        ROS_WARN("Lose one frame of data");
       }
       usleep(delay_time);
     }
@@ -421,7 +422,7 @@ bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
       int info_num;
       info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], 1);
       if (0 == info_num) {
-	ROS_WARN("Lose one frame of data");
+        ROS_WARN("Lose one frame of data");
         return false;
       }
     }
@@ -432,7 +433,7 @@ bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
 
 void MotorReader::ControlCallback(const sensor_msgs::JointState& joint_state) {
   if (!if_initial) {
-    //ROS_WARN("control failure caused by initialization failure");
+    // ROS_WARN("control failure caused by initialization failure");
     return;
   }
   /*
@@ -455,8 +456,10 @@ void MotorReader::ControlCallback(const sensor_msgs::JointState& joint_state) {
   for (size_t i = 0; i < 4; i++) {
     state_cmds.push_back(joint_state.position[i + 4]);
   }
-  //std::cout << "the control input : " << state_cmds[0] << "  " << state_cmds[1] << "  " << state_cmds[2] << "  " << state_cmds[3] << "  " 
-//	                              << state_cmds[4] << "  " << state_cmds[5] << "  " << state_cmds[6] << "  " << state_cmds[7] << std::endl; 
+  // std::cout << "the control input : " << state_cmds[0] << "  " <<
+  // state_cmds[1] << "  " << state_cmds[2] << "  " << state_cmds[3] << "  "
+  //	                              << state_cmds[4] << "  " << state_cmds[5]
+  //<< "  " << state_cmds[6] << "  " << state_cmds[7] << std::endl;
   ControlMotor(state_cmds);
 }
 
@@ -491,7 +494,7 @@ void MotorReader::DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
 
 void MotorReader::TeleopCallback(const geometry_msgs::Twist& twist) {
   if (!if_initial) {
-    //ROS_WARN("teleop failure caused by initialization failure");
+    // ROS_WARN("teleop failure caused by initialization failure");
     return;
   }
 }
@@ -503,31 +506,31 @@ void MotorReader::FeedbackCallback() {
       // ROS_WARN("feedback failure caused by initialization failure");
       continue;
     }
-    
+
     if (!if_get_ekf_odom) {
-      //std::cout << "get ekf is false" << std::endl;
+      // std::cout << "get ekf is false" << std::endl;
       continue;
     } else {
       std::cout << "get ekf is true" << std::endl;
     }
-    //VCI_ClearBuffer(device_type, device_index, can_index);
+    // VCI_ClearBuffer(device_type, device_index, can_index);
     FeedbackReq();
-    //usleep(160000);
+    // usleep(160000);
 
     uint data_num;
     data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
     if (0 == data_num) {
       ROS_WARN("no data in buffer of motor feedback!!");
-     // continue;
+      // continue;
     } else if (-1 == data_num) {
       ROS_WARN("get data num of motor feedback failure!");
       continue;
     }
 
     // maybe the 'data_num' could be set as 2500
-    //PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
-    //uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
-     //                          data_num * 3, wait_time);
+    // PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
+    // uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
+    //                          data_num * 3, wait_time);
     PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[2500];
     uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
                                2500, wait_time);
@@ -540,14 +543,14 @@ void MotorReader::FeedbackCallback() {
     }
 
     int data_count = 0;
-    //std::cout << "show the id-s : ";
+    // std::cout << "show the id-s : ";
     for (size_t i = 0; i < 2500; i++) {
       if (rec_obj[i].ID != 0x00000000) {
-	//std::cout << std::hex << "0x" << rec_obj[i].ID << "  ";
-	data_count++;
+        // std::cout << std::hex << "0x" << rec_obj[i].ID << "  ";
+        data_count++;
       }
     }
-    //std::cout << std::endl;
+    // std::cout << std::endl;
 
     sensor_msgs::JointState state;
     state.header.frame_id = "motor";
@@ -574,13 +577,13 @@ void MotorReader::FeedbackCallback() {
         continue;
       }
       if (rec_obj[i].ID != 0x00000000) {
-	out << std::hex << "0x" << rec_obj[i].ID << " : ";
+        out << std::hex << "0x" << rec_obj[i].ID << " : ";
         for (size_t j = 0; j < 8; j++) {
-	  out << std::hex << "0x" << (int)rec_obj[i].Data[j] << ", ";
-	}
-	out << std::endl;
+          out << std::hex << "0x" << (int)rec_obj[i].Data[j] << ", ";
+        }
+        out << std::endl;
       }
-      
+
       if (LEFT_MOTOR == rec_obj[i].Data[2]) {
         if (POSITION_FD == rec_obj[i].Data[1]) {
           int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
@@ -611,7 +614,7 @@ void MotorReader::FeedbackCallback() {
       std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
     }
     std::cout << std::endl;
-    
+
     std::cout << "the position is : ";
     for (size_t j = 0; j < state.position.size(); j++) {
       std::cout << std::dec << std::fixed << state.position[j] << "  ";
@@ -633,10 +636,10 @@ void MotorReader::FeedbackCallback() {
     }
 
     if (if_pub) {
-      std::cout << "if_pub is true" << std::endl; 
+      std::cout << "if_pub is true" << std::endl;
       ROS_ERROR("if pub is true");
     } else {
-      std::cout << "if_pub is false" << std::endl; 
+      std::cout << "if_pub is false" << std::endl;
     }
 
     if (if_pub) {
@@ -693,6 +696,52 @@ void MotorReader::FeedbackReq() {
   delete[] obj;
 }
 
+void MotorReader::FeedbackReq(const bool& use_velocity_req,
+                              const bool& use_position_req) {
+  if (use_velocity_req) {
+    PVCI_CAN_OBJ vel_obj = GetVciObject(8);
+    int vel_req_len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
+                      sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
+    for (size_t i = 0; i < 4; i++) {
+      vel_obj[i * 2].ID += cob_id[i];
+      vel_obj[i * 2].DataLen = vel_req_len;
+      DataInitial(vel_obj[i * 2].Data, cmd.BASE_VELOCITY_FEEDBACK, vel_req_len);
+      vel_obj[i * 2].Data[2] = LEFT_MOTOR;
+
+      vel_obj[i * 2 + 1].ID += cob_id[i];
+      vel_obj[i * 2 + 1].DataLen = vel_req_len;
+      DataInitial(vel_obj[i * 2 + 1].Data, cmd.BASE_VELOCITY_FEEDBACK,
+                  vel_req_len);
+      vel_obj[i * 2 + 1].Data[2] = RIGHT_MOTOR;
+    }
+
+    SendCommand(vel_obj, 8);
+    delete[] vel_obj;
+  }
+
+  if (use_position_req) {
+    PVCI_CAN_OBJ position_obj = GetVciObject(8);
+    int position_req_len = sizeof(cmd.BASE_POSITION_FEEDBACK) /
+                           sizeof(cmd.BASE_POSITION_FEEDBACK[0]);
+    for (size_t i = 0; i < 4; i++) {
+      position_obj[i * 2].ID += cob_id[i];
+      position_obj[i * 2].DataLen = position_req_len;
+      DataInitial(position_obj[i * 2].Data, cmd.BASE_POSITION_FEEDBACK,
+                  position_req_len);
+      position_obj[i * 2].Data[2] = LEFT_MOTOR;
+
+      position_obj[i * 2 + 1].ID += cob_id[i];
+      position_obj[i * 2 + 1].DataLen = position_req_len;
+      DataInitial(position_obj[i * 2 + 1].Data, cmd.BASE_POSITION_FEEDBACK,
+                  position_req_len);
+      position_obj[i * 2 + 1].Data[2] = RIGHT_MOTOR;
+    }
+
+    SendCommand(position_obj, 8);
+    delete[] position_obj;
+  }
+}
+
 void MotorReader::ControlMotor(const std::vector<float>& raw_state) {
   std::vector<int> state = CommandTransform(raw_state);
 
@@ -702,11 +751,14 @@ void MotorReader::ControlMotor(const std::vector<float>& raw_state) {
   // 6->left. 7->right for steering driver 2 rear
   int obj_num = 8;
   PVCI_CAN_OBJ obj = GetVciObject(obj_num);
-  //std::cout << "the motor cmd     : " << state[0] << "  " << state[1] << "  " << state[2] << "  " << state[3] << "  " 
-//	                              << state[4] << "  " << state[5] << "  " << state[6] << "  " << state[7] << std::endl;
+  // std::cout << "the motor cmd     : " << state[0] << "  " << state[1] << "  "
+  // << state[2] << "  " << state[3] << "  "
+  //	                              << state[4] << "  " << state[5] << "  " <<
+  // state[6] << "  " << state[7] << std::endl;
   switch (walking_mode) {
     case POSITION_MODE: {
-      //std::cout << "position mode for walking is under developing" << std::endl;
+      // std::cout << "position mode for walking is under developing" <<
+      // std::endl;
       ROS_WARN("position mode for walking is under developing");
       break;
     }
@@ -732,7 +784,8 @@ void MotorReader::ControlMotor(const std::vector<float>& raw_state) {
       break;
     }
     case CURRENT_MODE: {
-      //std::cout << "current mode for walking is under developing" << std::endl;
+      // std::cout << "current mode for walking is under developing" <<
+      // std::endl;
       ROS_WARN("current mode for walking is under developing");
       break;
     }
@@ -784,7 +837,8 @@ void MotorReader::ControlMotor(const std::vector<float>& raw_state) {
       break;
     }
     case CURRENT_MODE: {
-      //std::cout << "current mode for steering is under developing" << std::endl;
+      // std::cout << "current mode for steering is under developing" <<
+      // std::endl;
       ROS_WARN("current mode for steering is under developing");
       break;
     }
@@ -833,7 +887,7 @@ void MotorReader::StopMotor() {
     obj[i].DataLen = len;
     DataInitial(obj[i].Data, cmd.DISENABLE_COMMAND, len);
   }
-  //PrintTest(obj[0].Data, len, "disenable process : ");
+  // PrintTest(obj[0].Data, len, "disenable process : ");
   SendCommand(obj, id_num);
   delete[] obj;
 
@@ -848,7 +902,7 @@ void MotorReader::StopMotor() {
     obj[i].DataLen = len;
     DataInitial(obj[i].Data, cmd.SAVE_PARAMETERS, len);
   }
-  //PrintTest(obj[0].Data, len, "save parameter : ");
+  // PrintTest(obj[0].Data, len, "save parameter : ");
   SendCommand(obj, id_num);
   delete[] obj;
 
@@ -1003,7 +1057,7 @@ void MotorReader::Homing() {
 
     ControlMotor(raw_state);
 
-    //std::cout << "======================" << std::endl;
+    // std::cout << "======================" << std::endl;
     if (steer_v[0] == 0.0 && steer_v[1] == 0.0 && steer_v[2] == 0.0 &&
         steer_v[3] == 0.0) {
       ROS_INFO("homing finish !!");
@@ -1208,8 +1262,7 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
         yaw = 2 * M_PI - fabs(yaw);
       }
     }
-    tf::Quaternion q =
-        tf::createQuaternionFromRPY(roll, pitch, yaw);
+    tf::Quaternion q = tf::createQuaternionFromRPY(roll, pitch, yaw);
     raw_odom.pose.pose.position.z = 0.0;
 
     // difference between q.x() and q.getX()
@@ -1231,7 +1284,8 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
   if_get_ekf_odom = false;
 }
 
-void MotorReader::OdomCallback(const geometry_msgs::PoseWithCovarianceStamped& odom_msg) {
+void MotorReader::OdomCallback(
+    const geometry_msgs::PoseWithCovarianceStamped& odom_msg) {
   if (if_home_finish && !if_get_ekf_odom) {
     filtered_pose = odom_msg;
     if_get_ekf_odom = true;
@@ -1239,15 +1293,14 @@ void MotorReader::OdomCallback(const geometry_msgs::PoseWithCovarianceStamped& o
 }
 
 void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
-
-  //std::cout << "if home finish is : " << if_home_finish << std::endl;
+  // std::cout << "if home finish is : " << if_home_finish << std::endl;
   if (!if_home_finish) {
-    //std::cout << "the home position i got is :";
+    // std::cout << "the home position i got is :";
     for (size_t i = 0; i < home_state.data.size(); i++) {
       home[i] = home_state.data[i];
-      //std::cout << home[i] << "  ";
+      // std::cout << home[i] << "  ";
     }
-    //std::cout << std::endl;
+    // std::cout << std::endl;
 
     cur_time = ros::Time::now();
     nav_msgs::Odometry init_odom;
@@ -1268,7 +1321,7 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
       }
     }
     for (size_t i = 0; i < 6; i++) {
-      ROS_WARN("the cov is : %.7f", init_odom.pose.covariance[i*6+i]);
+      ROS_WARN("the cov is : %.7f", init_odom.pose.covariance[i * 6 + i]);
     }
 
     init_odom.twist.twist.linear.x = init_odom.twist.twist.linear.y =
@@ -1286,7 +1339,7 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     ROS_INFO(
         "wait for 2 seconds and publish initial odometry info to "
         "robot_poes_ekf node");
-    //std::cout << "after ros info" << std::endl;
+    // std::cout << "after ros info" << std::endl;
     sleep(2);
 
     raw_odom_pub.publish(init_odom);
@@ -1334,7 +1387,8 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     posi_obj[0].DataLen = posi_obj[1].DataLen = posi_obj[2].DataLen =
         posi_obj[3].DataLen = posi_cmd_len;
 
-    ROS_INFO("home position i got is : %d, %d, %d, %d", home[0], home[1], home[2], home[3]); 
+    ROS_INFO("home position i got is : %d, %d, %d, %d", home[0], home[1],
+             home[2], home[3]);
     DataTransform(posi_obj[0].Data, cmd.BASE_POSITION_COMMAND, posi_cmd_len,
                   LEFT_MOTOR, home[0]);
     DataTransform(posi_obj[1].Data, cmd.BASE_POSITION_COMMAND, posi_cmd_len,
