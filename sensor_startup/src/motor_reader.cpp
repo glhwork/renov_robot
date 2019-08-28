@@ -508,49 +508,10 @@ void MotorReader::FeedbackCallback() {
     }
 
     if (!if_get_ekf_odom) {
-      // std::cout << "get ekf is false" << std::endl;
       continue;
     } else {
       std::cout << "get ekf is true" << std::endl;
     }
-    // VCI_ClearBuffer(device_type, device_index, can_index);
-    FeedbackReq();
-    // usleep(160000);
-
-    uint data_num;
-    data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
-    if (0 == data_num) {
-      ROS_WARN("no data in buffer of motor feedback!!");
-      // continue;
-    } else if (-1 == data_num) {
-      ROS_WARN("get data num of motor feedback failure!");
-      continue;
-    }
-
-    // maybe the 'data_num' could be set as 2500
-    // PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[data_num];
-    // uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
-    //                          data_num * 3, wait_time);
-    PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[2500];
-    uint rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj,
-                               2500, wait_time);
-
-    cur_time = ros::Time::now();
-    if (-1 == rec_num) {
-      delete[] rec_obj;
-      ROS_WARN("CAN reading of motor feedback failure!");
-      continue;
-    }
-
-    int data_count = 0;
-    // std::cout << "show the id-s : ";
-    for (size_t i = 0; i < 2500; i++) {
-      if (rec_obj[i].ID != 0x00000000) {
-        // std::cout << std::hex << "0x" << rec_obj[i].ID << "  ";
-        data_count++;
-      }
-    }
-    // std::cout << std::endl;
 
     sensor_msgs::JointState state;
     state.header.frame_id = "motor";
@@ -565,49 +526,53 @@ void MotorReader::FeedbackCallback() {
     state.velocity = {10000.0, 10000.0, 10000.0, 10000.0,
                       10000.0, 10000.0, 10000.0, 10000.0};
 
-    int count_tmp = 0;
-    std::ofstream out;
-    out.open("/home/renov_robot/Desktop/tmp.txt");
-    std::cout << "begin setvalue" << std::endl;
-    for (size_t i = 0; i < 2500; i++) {
-      if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
-          0x00000700 + cob_id[1] == rec_obj[i].ID ||
-          0x00000700 + cob_id[2] == rec_obj[i].ID ||
-          0x00000700 + cob_id[3] == rec_obj[i].ID) {
-        continue;
-      }
-      if (rec_obj[i].ID != 0x00000000) {
-        out << std::hex << "0x" << rec_obj[i].ID << " : ";
-        for (size_t j = 0; j < 8; j++) {
-          out << std::hex << "0x" << (int)rec_obj[i].Data[j] << ", ";
-        }
-        out << std::endl;
-      }
+    VelPosiFeedbackReq(true, false);
+    uint data_num;
+    uint rec_num;
 
-      if (LEFT_MOTOR == rec_obj[i].Data[2]) {
-        if (POSITION_FD == rec_obj[i].Data[1]) {
-          int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
-          state.position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-          state.name[index] = state.name[index] + "_1";
-        }
-        if (VELOCITY_FD == rec_obj[i].Data[1]) {
-          int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
-          state.velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-        }
-      }
-      if (RIGHT_MOTOR == rec_obj[i].Data[2]) {
-        if (POSITION_FD == rec_obj[i].Data[1]) {
-          int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
-          state.position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-          state.name[index] = state.name[index] + "_1";
-        }
-        if (VELOCITY_FD == rec_obj[i].Data[1]) {
-          int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
-          state.velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-        }
-      }
+    data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
+    if (0 == data_num) {
+      ROS_WARN("no data in buffer of motor feedback!!");
+      continue;
+    } else if (-1 == data_num) {
+      ROS_WARN("get data num of motor feedback failure!");
+      continue;
     }
-    out.close();
+
+    PVCI_CAN_OBJ rec_obj = new VCI_CAN_OBJ[2500];
+    rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj, 2500,
+                          wait_time);
+    cur_time = ros::Time::now();
+    if (-1 == rec_num) {
+      delete[] rec_obj;
+      ROS_WARN("CAN reading of motor feedback failure!");
+      continue;
+    }
+    GetFeedback(&state, rec_obj);
+    delete[] rec_obj;
+
+    usleep(10000);
+
+    VelPosiFeedbackReq(false, true);
+    rec_obj = new VCI_CAN_OBJ[2500];
+    data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
+    if (0 == data_num) {
+      ROS_WARN("no data in buffer of motor feedback!!");
+      continue;
+    } else if (-1 == data_num) {
+      ROS_WARN("get data num of motor feedback failure!");
+      continue;
+    }
+    rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj, 2500,
+                          wait_time);
+    if (-1 == rec_num) {
+      delete[] rec_obj;
+      ROS_WARN("CAN reading of motor feedback failure!");
+      continue;
+    }
+    GetFeedback(&state, rec_obj);
+
+
 
     std::cout << "the velocity is : ";
     for (size_t j = 0; j < state.velocity.size(); j++) {
@@ -661,6 +626,40 @@ void MotorReader::FeedbackCallback() {
   }
 }
 
+void MotorReader::GetFeedback(sensor_msgs::JointState* state,
+                              const PVCI_CAN_OBJ rec_obj) {
+  for (size_t i = 0; i < 2500; i++) {
+    if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
+        0x00000700 + cob_id[1] == rec_obj[i].ID ||
+        0x00000700 + cob_id[2] == rec_obj[i].ID ||
+        0x00000700 + cob_id[3] == rec_obj[i].ID) {
+      continue;
+    }
+    if (LEFT_MOTOR == rec_obj[i].Data[2]) {
+      if (POSITION_FD == rec_obj[i].Data[1]) {
+        int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
+        state->position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+        state->name[index] = state->name[index] + "_1";
+      }
+      if (VELOCITY_FD == rec_obj[i].Data[1]) {
+        int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
+        state->velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+      }
+    }
+    if (RIGHT_MOTOR == rec_obj[i].Data[2]) {
+      if (POSITION_FD == rec_obj[i].Data[1]) {
+        int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
+        state->position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+        state->name[index] = state->name[index] + "_1";
+      }
+      if (VELOCITY_FD == rec_obj[i].Data[1]) {
+        int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
+        state->velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+      }
+    }
+  }
+}
+
 void MotorReader::FeedbackReq() {
   PVCI_CAN_OBJ obj = GetVciObject(id_num * 4);
   for (size_t i = 0; i < id_num; i++) {
@@ -696,8 +695,8 @@ void MotorReader::FeedbackReq() {
   delete[] obj;
 }
 
-void MotorReader::FeedbackReq(const bool& use_velocity_req,
-                              const bool& use_position_req) {
+void MotorReader::VelPosiFeedbackReq(const bool& use_velocity_req,
+                                     const bool& use_position_req) {
   if (use_velocity_req) {
     PVCI_CAN_OBJ vel_obj = GetVciObject(8);
     int vel_req_len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
@@ -742,8 +741,8 @@ void MotorReader::FeedbackReq(const bool& use_velocity_req,
   }
 }
 
-void MotorReader::FeedbackReq(const bool& if_read_front,
-                              const bool& if_read_rear) {
+void MotorReader::FrontRearFeedbackReq(const bool& if_read_front,
+                                       const bool& if_read_rear) {
   if (if_read_front) {
     PVCI_CAN_OBJ front_obj = GetVciObject(8);
     for (size_t i = 0; i < 2; i++) {
@@ -780,7 +779,6 @@ void MotorReader::FeedbackReq(const bool& if_read_front,
 
     SendCommand(front_obj, 8);
     delete[] front_obj;
-    
   }
 
   if (if_read_rear) {
@@ -803,7 +801,7 @@ void MotorReader::FeedbackReq(const bool& if_read_front,
       rear_obj[i * 4 + 1].Data[2] = RIGHT_MOTOR;
 
       int rear_velocity_len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
-                               sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
+                              sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
       rear_obj[i * 4 + 2].ID += cob_id[i * 2 + 1];
       rear_obj[i * 4 + 2].DataLen = rear_velocity_len;
       DataInitial(rear_obj[i * 4 + 2].Data, cmd.BASE_VELOCITY_FEEDBACK,

@@ -1,26 +1,26 @@
 #ifndef MOTOR_READER_H
 #define MOTOR_READER_H
 
-#include <iostream>
-#include <cmath>
-#include <string>
-#include <vector>
-#include <sstream>
 #include <unistd.h>
 #include <boost/thread.hpp>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include "yaml-cpp/yaml.h"
 
+#include "geometry_msgs/PoseWithCovarianceStamped.h"
+#include "geometry_msgs/Twist.h"
+#include "nav_msgs/Odometry.h"
 #include "ros/ros.h"
+#include "sensor_msgs/JointState.h"
+#include "serial/serial.h"
 #include "std_msgs/Bool.h"
 #include "std_msgs/Int64MultiArray.h"
-#include "sensor_msgs/JointState.h"
-#include "geometry_msgs/Twist.h"
-#include "geometry_msgs/PoseWithCovarianceStamped.h"
-#include "nav_msgs/Odometry.h"
-#include "tf/transform_listener.h"
 #include "tf/transform_broadcaster.h"
-#include "serial/serial.h"
+#include "tf/transform_listener.h"
 
 #include "CanAssist.h"
 #include "controlcan.h"
@@ -34,10 +34,7 @@ struct IdConfig {
   int steer_chn2;
 };
 
-enum MotionMode {
-  FORWARD,
-  ROTATE
-};
+enum MotionMode { FORWARD, ROTATE };
 
 class MotorReader {
  public:
@@ -49,8 +46,8 @@ class MotorReader {
   bool DriverInit();
   bool SetMode();
   bool EnableMotor();
-  void ModeCommand(const int& id_0, const int& id_1, 
-                   const int& len, const uint8_t& mode);
+  void ModeCommand(const int& id_0, const int& id_1, const int& len,
+                   const uint8_t& mode);
   void DataInitial(BYTE* data, uint8_t* cmd, const uint& len);
 
   VCI_CAN_OBJ* GetVciObject(const int& obj_num);
@@ -65,15 +62,18 @@ class MotorReader {
   void FeedbackCallback();
   void StopCallback(const std_msgs::Bool& stop);
   void ControlMotor(const std::vector<float>& raw_state);
-   
+
   void StopMotor();
   void FeedbackReq();
-  void FeedbackReq(const bool& use_velocity_req, const bool& use_position_req);
-  void FeedbackReq(const bool& if_read_front, const bool& if_read_rear);
+  void VelPosiFeedbackReq(const bool& use_velocity_req,
+                          const bool& use_position_req);
+  void FrontRearFeedbackReq(const bool& if_read_front,
+                            const bool& if_read_rear);
+  void GetFeedback(sensor_msgs::JointState* state, const PVCI_CAN_OBJ rec_obj);
   std::vector<int> CommandTransform(const std::vector<float>& raw_state);
   void PrintTest(BYTE* data, const int& len, const std::string& str);
 
-  int  FourByteHex2Int(uint8_t* data);
+  int FourByteHex2Int(uint8_t* data);
   bool ReadEncoder(int* encod_data);
   void Homing();
 
@@ -98,14 +98,13 @@ class MotorReader {
   int can_index;
   // id_num means the quantity of motor-drivers we use
   int id_num;
-  
+
   // double cur_time;
   // double pre_time;
   ros::Time cur_time;
   ros::Time pre_time;
 
  private:
-
   /* LAUNCH PARAMETERS */
   // port connected with CAN-USB converter
   std::string port;
@@ -122,10 +121,8 @@ class MotorReader {
   // the publish period of motor states
   double state_pub_period;
 
-
   /* CONFIG PARAMETERS */
   YAML::Node param;
-  
 
   // working mode of motors:
   // 0 -> position servo
@@ -139,6 +136,7 @@ class MotorReader {
   uint encoder_w;
   uint abs_encoder;
   int freq_multiplier;
+
  private:
   // reduction ratio of steering or walking motors
   double reduc_ratio_s;
@@ -147,9 +145,11 @@ class MotorReader {
   uint max_velocity;
   // command sign of each motor
   int motor_sign[8];
+
  protected:
   // homing position
   int home[4];
+
  private:
   // homing value of absolute encoder
   int abs_home[4];
@@ -161,7 +161,6 @@ class MotorReader {
   double home_ki;
   double home_kd;
 
-  
   /* GLOBAL VARIABLES */
  protected:
   bool if_initial;
@@ -170,8 +169,8 @@ class MotorReader {
   double preset_steer_angle;
   double base_rotate_radius;
   double wheel_radius;
- private:
 
+ private:
   ros::NodeHandle nh;
   ros::NodeHandle n_private;
   ros::Publisher state_pub;
@@ -185,9 +184,8 @@ class MotorReader {
 
   // nav_msgs::Odometry raw_odom;
   geometry_msgs::PoseWithCovarianceStamped filtered_pose;
-  /* THREADS */ 
+  /* THREADS */
   boost::thread* state_pub_thread;
-
 
 };  // class MotorReader
 
