@@ -16,6 +16,7 @@
 #include "std_msgs/Int64MultiArray.h"
 #include "sensor_msgs/JointState.h"
 #include "geometry_msgs/Twist.h"
+#include "geometry_msgs/PoseWithCovarianceStamped.h"
 #include "nav_msgs/Odometry.h"
 #include "tf/transform_listener.h"
 #include "tf/transform_broadcaster.h"
@@ -75,7 +76,7 @@ class MotorReader {
   void Homing();
 
   void PublishOdometry(const sensor_msgs::JointState& joint_state);
-  void OdomCallback(const nav_msgs::Odometry& odom_msg);
+  void OdomCallback(const geometry_msgs::PoseWithCovarianceStamped& odom_msg);
   double GetVariance(const std::vector<double>& data_vec);
   double ComputeMean(const std::vector<double>& data_vec);
   void Loop();
@@ -163,7 +164,7 @@ class MotorReader {
  protected:
   bool if_initial;
   bool if_home_finish;
-  bool if_get_initial_ekf_odom;
+  bool if_get_ekf_odom;
   double preset_steer_angle;
   double base_rotate_radius;
   double wheel_radius;
@@ -181,7 +182,7 @@ class MotorReader {
   ros::Subscriber home_sub;
 
   // nav_msgs::Odometry raw_odom;
-  nav_msgs::Odometry filtered_odom;
+  geometry_msgs::PoseWithCovarianceStamped filtered_pose;
   /* THREADS */ 
   boost::thread* state_pub_thread;
 

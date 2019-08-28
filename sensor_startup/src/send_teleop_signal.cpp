@@ -28,7 +28,7 @@ Teleop::Teleop(ros::NodeHandle nh) {
   //     "/home/renov_robot/catkin_ws/src/renov_robot/sensor_startup/config/"
   //     "motor_config.yaml");
   ReadFile(
-      "/home/glh/renov_ws/src/renov_robot/sensor_startup/config/"
+      "/home/renov_robot/renov_ws/src/renov_robot/sensor_startup/config/"
       "motor_config.yaml");
   control_signal_pub =
       nh.advertise<sensor_msgs::JointState>("cmd_base_joint", 100);
@@ -47,8 +47,8 @@ Teleop::Teleop(ros::NodeHandle nh) {
 
 void Teleop::ReadFile(const std::string& file_address) {
   YAML::Node config = YAML::LoadFile(file_address);
-  wheel_dis_len = config["wheel_dis_len"].as<double>();
-  wheel_dis_wid = config["wheel_dis_wid"].as<double>();
+  wheel_dis_len = config["front_rear_track"].as<double>();
+  wheel_dis_wid = config["left_right_track"].as<double>();
 }
 
 void Teleop::SendTeleopSignal(const geometry_msgs::TwistConstPtr& twist_msg) {
@@ -67,7 +67,8 @@ void Teleop::SendTeleopSignal(const geometry_msgs::TwistConstPtr& twist_msg) {
     double r = 0.5 * hypotenuse;
 
     double steer_angle = fabs(atan(wheel_dis_len / wheel_dis_wid));
-    std::vector<double> velocity;
+    //ROS_INFO("steer angle is : %.3f", steer_angle);
+    //std::vector<double> velocity;
     double v_linear = az * r / (double)0.15;
 
     double sa = steer_angle;

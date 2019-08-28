@@ -2,7 +2,7 @@
   <!-- <node pkg="tf" 
         type="static_transform_publisher" 
         name="broadcaster_name" 
-        args="x y z yaw pitch roll parent_frame child_frame time(=1000ms/HZ)"/>    -->
+        args="x y z yaw pitch roll parent_frame child_frame time(=1000ms <-> 1HZ)"/>    -->
   <node pkg="tf" 
         type="static_transform_publisher" 
         name="footprint_to_link" 

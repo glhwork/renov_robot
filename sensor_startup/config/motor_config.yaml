@@ -8,7 +8,7 @@ id_num: 4  # total quantity of device attached to can analyst
 steering_mode: 0 
 walking_mode: 1
 
-encoder_s: 2500  # encoder line of steering motor
+encoder_s: 1024  # encoder line of steering motor
 encoder_w: 2500  # encoder line of walking motor
 abs_encoder: 1024  # encoder line of absolute encoders
 frequency_multiplier: 4 

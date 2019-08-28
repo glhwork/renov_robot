@@ -49,6 +49,7 @@ class ImuReader {
   std::string imu_pub_topic;
   bool use_request;
   int output_freq;
+  bool use_debug;
 
   ImuCommand cmd;
   serial::Serial imu_ser;
