@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="mobile_robot" type="mobile_platform_homing_ros.py" name="homing_ros" />
+  <node pkg="sensor_startup" type="send_teleop_signal" name="send_teleop_signal" />
+  <include file="$(find sensor_startup)/launch/motor_bringup.launch" />
+ 
+</launch>
