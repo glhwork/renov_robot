@@ -120,6 +120,8 @@ class MotorReader {
   int wait_time;
   // the publish period of motor states
   double state_pub_period;
+  // to determine whether sending multiple commands once
+  bool use_pack_data;
 
   /* CONFIG PARAMETERS */
   YAML::Node param;

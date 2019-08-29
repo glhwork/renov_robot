@@ -5,8 +5,9 @@
     <param name="file_address" 
       value="/home/renov_robot/renov_ws/src/renov_robot/sensor_startup/config/motor_config.yaml"/>
     <param name="delay_time" value="0"/>
-    <param name="wait_time" value="10"/>
-    <param name="state_pub_period" value="0.1" />
+    <param name="wait_time" value="-1"/>
+    <param name="state_pub_period" value="0.05" />
+    <param name="use_pack_data" value="false" />
   </node>
 
 </launch>

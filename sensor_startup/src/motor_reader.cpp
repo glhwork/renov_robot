@@ -63,6 +63,9 @@ void MotorReader::ParamInit() {
   if (!n_private.getParam("state_pub_period", state_pub_period)) {
     state_pub_period = 0.1;
   }
+  if (!n_private.getParam("use_pack_data", use_pack_data)) {
+    use_pack_data = true;
+  }
 }
 
 void MotorReader::ReadFile(const std::string& address) {
@@ -405,12 +408,24 @@ void MotorReader::IdCheck() {
 }
 
 bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
-  // VCI_Transmit(device_type, device_index, can_index, obj, len);
+
+  int frame_len = 10;
+  if (use_pack_data) {
+    int info_num;
+    if (len > 5) frame_len = 3 * frame_len;
+    info_num = VCI_Transmit(device_type, device_index, can_index, obj, frame_len);
+    if (0 == info_num) {
+      return false;
+      ROS_WARN("Lose frames of data");
+    }
+    return true;
+    
+  }
 
   if (0 != delay_time) {
     for (size_t i = 0; i < len; i++) {
       int info_num;
-      info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], 1);
+      info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], frame_len);
       if (0 == info_num) {
         return false;
         ROS_WARN("Lose one frame of data");
@@ -420,7 +435,7 @@ bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
   } else {
     for (size_t i = 0; i < len; i++) {
       int info_num;
-      info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], 1);
+      info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], frame_len);
       if (0 == info_num) {
         ROS_WARN("Lose one frame of data");
         return false;
@@ -501,16 +516,17 @@ void MotorReader::TeleopCallback(const geometry_msgs::Twist& twist) {
 
 void MotorReader::FeedbackCallback() {
   ros::Rate r(1.0 / state_pub_period);
+  int loop_count = 0;
   while (ros::ok()) {
     if (!if_initial) {
       // ROS_WARN("feedback failure caused by initialization failure");
       continue;
     }
-
+    
     if (!if_get_ekf_odom) {
       continue;
     } else {
-      std::cout << "get ekf is true" << std::endl;
+      //std::cout << "get ekf is true" << std::endl;
     }
 
     sensor_msgs::JointState state;
@@ -526,10 +542,14 @@ void MotorReader::FeedbackCallback() {
     state.velocity = {10000.0, 10000.0, 10000.0, 10000.0,
                       10000.0, 10000.0, 10000.0, 10000.0};
 
-    VelPosiFeedbackReq(true, false);
     uint data_num;
     uint rec_num;
 
+    //VelPosiFeedbackReq(true, false);
+    double t1 = ros::Time::now().toSec();
+    FrontRearFeedbackReq(true, false);
+    double t2 = ros::Time::now().toSec();
+    std::cout << "duration of req sending is : " << t2 - t1 << std::endl;
     data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
     if (0 == data_num) {
       ROS_WARN("no data in buffer of motor feedback!!");
@@ -548,13 +568,18 @@ void MotorReader::FeedbackCallback() {
       ROS_WARN("CAN reading of motor feedback failure!");
       continue;
     }
+    double t3 = ros::Time::now().toSec();
+    std::cout << "duration of judging data receiving is : " << t3 - t2 << std::endl;
     GetFeedback(&state, rec_obj);
+    double t4 = ros::Time::now().toSec();
+    std::cout << "duration of getting data receiving is : " << t4 - t3 << std::endl;
+    //std::cout << "get fb of front" << std::endl;
     delete[] rec_obj;
 
-    usleep(10000);
+    //usleep(10000);
 
-    VelPosiFeedbackReq(false, true);
-    rec_obj = new VCI_CAN_OBJ[2500];
+    //VelPosiFeedbackReq(false, true);
+    FrontRearFeedbackReq(false, true);
     data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
     if (0 == data_num) {
       ROS_WARN("no data in buffer of motor feedback!!");
@@ -563,6 +588,8 @@ void MotorReader::FeedbackCallback() {
       ROS_WARN("get data num of motor feedback failure!");
       continue;
     }
+
+    rec_obj = new VCI_CAN_OBJ[2500];
     rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj, 2500,
                           wait_time);
     if (-1 == rec_num) {
@@ -571,7 +598,8 @@ void MotorReader::FeedbackCallback() {
       continue;
     }
     GetFeedback(&state, rec_obj);
-
+    //std::cout << "get fb of rear" << std::endl;
+/*
     std::cout << "the velocity is : ";
     for (size_t j = 0; j < state.velocity.size(); j++) {
       std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
@@ -583,26 +611,31 @@ void MotorReader::FeedbackCallback() {
       std::cout << std::dec << std::fixed << state.position[j] << "  ";
     }
     std::cout << std::endl;
+*/
+    loop_count++;
 
     bool if_pub = true;
     for (size_t i = 0; i < state.velocity.size(); i++) {
       if (10000.0 == state.velocity[i]) {
         if_pub = false;
         ROS_WARN("no enough velocity feedback!!");
+        std::cout << "The loop run " << loop_count << " times " << std::endl;
         break;
       }
       if (state.name[i].find("_1") > state.name[i].size()) {
         if_pub = false;
         ROS_WARN("no enough position feedback!!");
+        std::cout << "The loop run " << loop_count << " times " << std::endl;
         break;
       }
     }
+    std::cout << "==================" << std::endl;
 
     if (if_pub) {
       std::cout << "if_pub is true" << std::endl;
       ROS_ERROR("if pub is true");
     } else {
-      std::cout << "if_pub is false" << std::endl;
+      //std::cout << "if_pub is false" << std::endl;
     }
 
     if (if_pub) {
@@ -630,9 +663,12 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
     if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
         0x00000700 + cob_id[1] == rec_obj[i].ID ||
         0x00000700 + cob_id[2] == rec_obj[i].ID ||
-        0x00000700 + cob_id[3] == rec_obj[i].ID) {
+        0x00000700 + cob_id[3] == rec_obj[i].ID ||
+	0x00000000 == rec_obj[i].ID) {
       continue;
     }
+    std::cout << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
+
     if (LEFT_MOTOR == rec_obj[i].Data[2]) {
       if (POSITION_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
@@ -655,6 +691,10 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
         state->velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
       }
     }
+    for (size_t j = 0; j < 8; j++) {
+      std::cout << std::hex << "0x" << (int)rec_obj[i].Data[j] << "  ";
+    }
+    std::cout << std::endl; 
   }
 }
 
@@ -1357,7 +1397,7 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
     raw_odom_pub.publish(raw_odom);
   }
 
-  if_get_ekf_odom = false;
+  //if_get_ekf_odom = false;
 }
 
 void MotorReader::OdomCallback(
@@ -1498,3 +1538,8 @@ void MotorReader::Loop() {
   state_pub_thread =
       new boost::thread(boost::bind(&MotorReader::FeedbackCallback, this));
 }
+/*
+void MotorReader::ModifyGetOdomFlag() {
+  if_get_ekf_odom = true;
+}
+*/
