@@ -572,8 +572,6 @@ void MotorReader::FeedbackCallback() {
     }
     GetFeedback(&state, rec_obj);
 
-
-
     std::cout << "the velocity is : ";
     for (size_t j = 0; j < state.velocity.size(); j++) {
       std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
