@@ -550,11 +550,7 @@ void MotorReader::FeedbackCallback() {
     uint data_num;
     uint rec_num;
 
-    // VelPosiFeedbackReq(true, false);
-    double t1 = ros::Time::now().toSec();
-    FrontRearFeedbackReq(true, false);
-    double t2 = ros::Time::now().toSec();
-    std::cout << "duration of req sending is : " << t2 - t1 << std::endl;
+    FeedbackReq();
     data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
     if (0 == data_num) {
       ROS_WARN("no data in buffer of motor feedback!!");
@@ -573,39 +569,8 @@ void MotorReader::FeedbackCallback() {
       ROS_WARN("CAN reading of motor feedback failure!");
       continue;
     }
-    double t3 = ros::Time::now().toSec();
-    std::cout << "duration of judging data receiving is : " << t3 - t2
-              << std::endl;
     GetFeedback(&state, rec_obj);
-    double t4 = ros::Time::now().toSec();
-    std::cout << "duration of getting data receiving is : " << t4 - t3
-              << std::endl;
-    // std::cout << "get fb of front" << std::endl;
-    delete[] rec_obj;
 
-    // usleep(10000);
-
-    // VelPosiFeedbackReq(false, true);
-    FrontRearFeedbackReq(false, true);
-    data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
-    if (0 == data_num) {
-      ROS_WARN("no data in buffer of motor feedback!!");
-      continue;
-    } else if (-1 == data_num) {
-      ROS_WARN("get data num of motor feedback failure!");
-      continue;
-    }
-
-    rec_obj = new VCI_CAN_OBJ[2500];
-    rec_num = VCI_Receive(device_type, device_index, can_index, rec_obj, 2500,
-                          wait_time);
-    if (-1 == rec_num) {
-      delete[] rec_obj;
-      ROS_WARN("CAN reading of motor feedback failure!");
-      continue;
-    }
-    GetFeedback(&state, rec_obj);
-    // std::cout << "get fb of rear" << std::endl;
     /*
         std::cout << "the velocity is : ";
         for (size_t j = 0; j < state.velocity.size(); j++) {
@@ -622,14 +587,17 @@ void MotorReader::FeedbackCallback() {
     loop_count++;
 
     bool if_pub = true;
-    for (size_t i = 0; i < state.velocity.size(); i++) {
-      if (10000.0 == state.velocity[i]) {
+    for (size_t i = 0; i < state.velocity.size() / 2; i++) {
+      if (if_need_feedback[i * 2] && (10000.0 == state.velocity[i * 2] ||
+                                      10000.0 == state.velocity[i * 2 + 1])) {
         if_pub = false;
         ROS_WARN("no enough velocity feedback!!");
         std::cout << "The loop run " << loop_count << " times " << std::endl;
         break;
       }
-      if (state.name[i].find("_1") > state.name[i].size()) {
+      if (if_need_feedback[i * 2 + 1] &&
+          (state.name[i * 2].find("_1") > state.name[i * 2].size() ||
+           state.name[i * 2 + 1].find("_1") > state.name[i * 2 + 1].size())) {
         if_pub = false;
         ROS_WARN("no enough position feedback!!");
         std::cout << "The loop run " << loop_count << " times " << std::endl;
