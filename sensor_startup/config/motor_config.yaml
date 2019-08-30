@@ -54,3 +54,13 @@ home_control:
 front_rear_track: 0.5  # length of mobile_base
 left_right_track: 0.395  # width of mobile_base
 wheel_radius: 0.075  # radius of wheels
+
+# this bool array is used to judge whether
+# the velocity/position feedback is needed
+# content : [driver_id_1-velocity, driver_id_1-position,
+#            driver_id_2-velocity, driver_id_2-position,
+#            .....etc]
+if_need_feedback: [true, true, 
+                   true, true, 
+                   true, true, 
+                   true, true]

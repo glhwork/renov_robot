@@ -163,6 +163,8 @@ class MotorReader {
   double home_ki;
   double home_kd;
 
+  bool if_need_feedback[8];
+
   /* GLOBAL VARIABLES */
  protected:
   bool if_initial;

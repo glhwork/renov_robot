@@ -116,6 +116,10 @@ void MotorReader::ReadFile(const std::string& address) {
 
   wheel_radius = param["wheel_radius"].as<double>();
 
+  for (size_t i = 0; i < 8; i++) {
+    if_need_feedback[i] = param["if_need_feedback"][i].as<bool>();
+  }
+
   IdCheck();
 }
 
@@ -408,24 +412,24 @@ void MotorReader::IdCheck() {
 }
 
 bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
-
   int frame_len = 10;
   if (use_pack_data) {
     int info_num;
     if (len > 5) frame_len = 3 * frame_len;
-    info_num = VCI_Transmit(device_type, device_index, can_index, obj, frame_len);
+    info_num =
+        VCI_Transmit(device_type, device_index, can_index, obj, frame_len);
     if (0 == info_num) {
       return false;
       ROS_WARN("Lose frames of data");
     }
     return true;
-    
   }
 
   if (0 != delay_time) {
     for (size_t i = 0; i < len; i++) {
       int info_num;
-      info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], frame_len);
+      info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i],
+                              frame_len);
       if (0 == info_num) {
         return false;
         ROS_WARN("Lose one frame of data");
@@ -435,7 +439,8 @@ bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
   } else {
     for (size_t i = 0; i < len; i++) {
       int info_num;
-      info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i], frame_len);
+      info_num = VCI_Transmit(device_type, device_index, can_index, &obj[i],
+                              frame_len);
       if (0 == info_num) {
         ROS_WARN("Lose one frame of data");
         return false;
@@ -522,11 +527,11 @@ void MotorReader::FeedbackCallback() {
       // ROS_WARN("feedback failure caused by initialization failure");
       continue;
     }
-    
+
     if (!if_get_ekf_odom) {
       continue;
     } else {
-      //std::cout << "get ekf is true" << std::endl;
+      // std::cout << "get ekf is true" << std::endl;
     }
 
     sensor_msgs::JointState state;
@@ -545,7 +550,7 @@ void MotorReader::FeedbackCallback() {
     uint data_num;
     uint rec_num;
 
-    //VelPosiFeedbackReq(true, false);
+    // VelPosiFeedbackReq(true, false);
     double t1 = ros::Time::now().toSec();
     FrontRearFeedbackReq(true, false);
     double t2 = ros::Time::now().toSec();
@@ -569,16 +574,18 @@ void MotorReader::FeedbackCallback() {
       continue;
     }
     double t3 = ros::Time::now().toSec();
-    std::cout << "duration of judging data receiving is : " << t3 - t2 << std::endl;
+    std::cout << "duration of judging data receiving is : " << t3 - t2
+              << std::endl;
     GetFeedback(&state, rec_obj);
     double t4 = ros::Time::now().toSec();
-    std::cout << "duration of getting data receiving is : " << t4 - t3 << std::endl;
-    //std::cout << "get fb of front" << std::endl;
+    std::cout << "duration of getting data receiving is : " << t4 - t3
+              << std::endl;
+    // std::cout << "get fb of front" << std::endl;
     delete[] rec_obj;
 
-    //usleep(10000);
+    // usleep(10000);
 
-    //VelPosiFeedbackReq(false, true);
+    // VelPosiFeedbackReq(false, true);
     FrontRearFeedbackReq(false, true);
     data_num = VCI_GetReceiveNum(device_type, device_index, can_index);
     if (0 == data_num) {
@@ -598,20 +605,20 @@ void MotorReader::FeedbackCallback() {
       continue;
     }
     GetFeedback(&state, rec_obj);
-    //std::cout << "get fb of rear" << std::endl;
-/*
-    std::cout << "the velocity is : ";
-    for (size_t j = 0; j < state.velocity.size(); j++) {
-      std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
-    }
-    std::cout << std::endl;
+    // std::cout << "get fb of rear" << std::endl;
+    /*
+        std::cout << "the velocity is : ";
+        for (size_t j = 0; j < state.velocity.size(); j++) {
+          std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
+        }
+        std::cout << std::endl;
 
-    std::cout << "the position is : ";
-    for (size_t j = 0; j < state.position.size(); j++) {
-      std::cout << std::dec << std::fixed << state.position[j] << "  ";
-    }
-    std::cout << std::endl;
-*/
+        std::cout << "the position is : ";
+        for (size_t j = 0; j < state.position.size(); j++) {
+          std::cout << std::dec << std::fixed << state.position[j] << "  ";
+        }
+        std::cout << std::endl;
+    */
     loop_count++;
 
     bool if_pub = true;
@@ -635,7 +642,7 @@ void MotorReader::FeedbackCallback() {
       std::cout << "if_pub is true" << std::endl;
       ROS_ERROR("if pub is true");
     } else {
-      //std::cout << "if_pub is false" << std::endl;
+      // std::cout << "if_pub is false" << std::endl;
     }
 
     if (if_pub) {
@@ -664,7 +671,7 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
         0x00000700 + cob_id[1] == rec_obj[i].ID ||
         0x00000700 + cob_id[2] == rec_obj[i].ID ||
         0x00000700 + cob_id[3] == rec_obj[i].ID ||
-	0x00000000 == rec_obj[i].ID) {
+        0x00000000 == rec_obj[i].ID) {
       continue;
     }
     std::cout << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
@@ -694,43 +701,48 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
     for (size_t j = 0; j < 8; j++) {
       std::cout << std::hex << "0x" << (int)rec_obj[i].Data[j] << "  ";
     }
-    std::cout << std::endl; 
+    std::cout << std::endl;
   }
 }
 
 void MotorReader::FeedbackReq() {
-  PVCI_CAN_OBJ obj = GetVciObject(id_num * 4);
-  for (size_t i = 0; i < id_num; i++) {
-    int len;
+  for (size_t i = 0; i < 4; i++) {
+    if (if_need_feedback[i * 2]) {
+      PVCI_CAN_OBJ vel_fb_obj = GetVciObject(2);
+      int vel_fb_obj_len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
+                           sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
+      vel_fb_obj[0].ID += cob_id[i];
+      vel_fb_obj[1].ID += cob_id[i];
+      vel_fb_obj[0].DataLen = vel_fb_obj[1].DataLen = vel_fb_obj_len;
+      DataInitial(vel_fb_obj[0].Data, cmd.BASE_VELOCITY_FEEDBACK,
+                  vel_fb_obj_len);
+      DataInitial(vel_fb_obj[1].Data, cmd.BASE_VELOCITY_FEEDBACK,
+                  vel_fb_obj_len);
+      vel_fb_obj[0].Data[2] = LEFT_MOTOR;
+      vel_fb_obj[1].Data[2] = RIGHT_MOTOR;
 
-    len = sizeof(cmd.BASE_POSITION_FEEDBACK) /
-          sizeof(cmd.BASE_POSITION_FEEDBACK[0]);
-    obj[i * 4 + 0].ID += cob_id[i];
-    obj[i * 4 + 0].DataLen = len;
-    DataInitial(obj[i * 4 + 0].Data, cmd.BASE_POSITION_FEEDBACK, len);
-    obj[i * 4 + 0].Data[2] = LEFT_MOTOR;
+      SendCommand(vel_fb_obj, 2);
+      delete[] vel_fb_obj;
+    }
+    if (if_need_feedback[i * 2 + 1]) {
+      PVCI_CAN_OBJ position_fb_obj = GetVciObject(2);
+      int position_fb_obj_len = sizeof(cmd.BASE_POSITION_FEEDBACK) /
+                                sizeof(cmd.BASE_POSITION_FEEDBACK[0]);
+      position_fb_obj[0].ID += cob_id[i];
+      position_fb_obj[1].ID += cob_id[i];
+      position_fb_obj[0].DataLen = position_fb_obj[1].DataLen =
+          position_fb_obj_len;
+      DataInitial(position_fb_obj[0].Data, cmd.BASE_POSITION_FEEDBACK,
+                  position_fb_obj_len);
+      DataInitial(position_fb_obj[1].Data, cmd.BASE_POSITION_FEEDBACK,
+                  position_fb_obj_len);
+      position_fb_obj[0].Data[2] = LEFT_MOTOR;
+      position_fb_obj[1].Data[2] = RIGHT_MOTOR;
 
-    obj[i * 4 + 1].ID += cob_id[i];
-    obj[i * 4 + 1].DataLen = len;
-    DataInitial(obj[i * 4 + 1].Data, cmd.BASE_POSITION_FEEDBACK, len);
-    obj[i * 4 + 1].Data[2] = RIGHT_MOTOR;
-
-    len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
-          sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
-    obj[i * 4 + 2].ID += cob_id[i];
-    obj[i * 4 + 2].DataLen = len;
-    DataInitial(obj[i * 4 + 2].Data, cmd.BASE_VELOCITY_FEEDBACK, len);
-    obj[i * 4 + 2].Data[2] = LEFT_MOTOR;
-
-    obj[i * 4 + 3].ID += cob_id[i];
-    obj[i * 4 + 3].DataLen = len;
-    DataInitial(obj[i * 4 + 3].Data, cmd.BASE_VELOCITY_FEEDBACK, len);
-    obj[i * 4 + 3].Data[2] = RIGHT_MOTOR;
+      SendCommand(position_fb_obj, 2);
+      delete[] position_fb_obj;
+    }
   }
-
-  SendCommand(obj, id_num * 4);
-
-  delete[] obj;
 }
 
 void MotorReader::VelPosiFeedbackReq(const bool& use_velocity_req,
@@ -1397,7 +1409,7 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
     raw_odom_pub.publish(raw_odom);
   }
 
-  //if_get_ekf_odom = false;
+  // if_get_ekf_odom = false;
 }
 
 void MotorReader::OdomCallback(
