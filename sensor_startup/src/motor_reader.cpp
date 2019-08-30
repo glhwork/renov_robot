@@ -536,7 +536,6 @@ void MotorReader::FeedbackCallback() {
     } else {
       // std::cout << "get ekf is true" << std::endl;
     }
-
     sensor_msgs::JointState state;
     state.header.frame_id = "motor";
     state.header.stamp = ros::Time::now();
@@ -605,12 +604,18 @@ void MotorReader::FeedbackCallback() {
         break;
       }
     }
+    state.name = {"front_left_walking",  "front_right_walking",
+                  "rear_left_walking",   "rear_right_walking",
+                  "front_left_steering", "front_right_steering",
+                  "rear_left_steering",  "rear_right_steering"};
+    std::cout << "home is : " << home[0] << "  " << home[1] << "  " << home[2] << "  " << home[3] << std::endl;
     std::cout << "==================" << std::endl;
 
     if (if_pub) {
+      int home_tmp[8] = {0, 0, 0, 0, home[0], home[1], home[2], home[3]};
       for (size_t i = 0; i < 8; i++) {
-        state.position[i] = (state.position[i] - home[i]) /
-                            (freq_multiplier * encoder_s) * (2 * M_PI);
+        state.position[i] = (state.position[i] - home_tmp[i]) /
+                            (freq_multiplier * encoder_s * reduc_ratio_s) * (2 * M_PI);
         state.velocity[i] = state.velocity[i] / reduc_ratio_w;
       }
 
@@ -626,6 +631,8 @@ void MotorReader::FeedbackCallback() {
 
 void MotorReader::GetFeedback(sensor_msgs::JointState* state,
                               const PVCI_CAN_OBJ rec_obj) {
+  std::ofstream out;
+  out.open("/home/renov_robot/Desktop/tmp.txt");
   for (size_t i = 0; i < 2500; i++) {
     if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
         0x00000700 + cob_id[1] == rec_obj[i].ID ||
@@ -635,12 +642,19 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
       continue;
     }
  //   std::cout << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
-
+    out << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
+    for (size_t j = 0; j < 8; j++) {
+      out << std::hex << "0x" << (int)rec_obj[i].Data[j] << ",  ";
+    }
+    out << std::endl;
+  
     if (LEFT_MOTOR == rec_obj[i].Data[2]) {
       if (POSITION_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
         state->position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-        state->name[index] = state->name[index] + "_1";
+	if (state->name[index].find("_1") > state->name.size()) {
+          state->name[index] = state->name[index] + "_1";
+	}
       }
       if (VELOCITY_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
@@ -651,7 +665,9 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
       if (POSITION_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
         state->position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-        state->name[index] = state->name[index] + "_1";
+	if (state->name[index].find("_1") > state->name.size()) {
+          state->name[index] = state->name[index] + "_1";
+	}
       }
       if (VELOCITY_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
@@ -665,6 +681,7 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
     std::cout << std::endl;
     */
   }
+  out.close();
 }
 
 void MotorReader::FeedbackReq() {

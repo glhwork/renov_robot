@@ -64,4 +64,4 @@ if_need_feedback: [true, false,
                    true, false, 
                    false, true, 
                    false, true]
-frame_len: 15  # this param is for test 
+frame_len: 20  # this param is for test 
