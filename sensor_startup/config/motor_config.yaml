@@ -60,7 +60,8 @@ wheel_radius: 0.075  # radius of wheels
 # content : [driver_id_1-velocity, driver_id_1-position,
 #            driver_id_2-velocity, driver_id_2-position,
 #            .....etc]
-if_need_feedback: [true, true, 
-                   true, true, 
-                   true, true, 
-                   true, true]
+if_need_feedback: [true, false, 
+                   true, false, 
+                   false, true, 
+                   false, true]
+frame_len: 6  # this param is for test 

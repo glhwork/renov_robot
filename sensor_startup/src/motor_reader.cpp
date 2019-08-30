@@ -120,6 +120,8 @@ void MotorReader::ReadFile(const std::string& address) {
     if_need_feedback[i] = param["if_need_feedback"][i].as<bool>();
   }
 
+  frame_len = param["frame_len"].as<int>();
+
   IdCheck();
 }
 
@@ -412,7 +414,7 @@ void MotorReader::IdCheck() {
 }
 
 bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
-  int frame_len = 10;
+  /*
   if (use_pack_data) {
     int info_num;
     if (len > 5) frame_len = 3 * frame_len;
@@ -424,6 +426,7 @@ bool MotorReader::SendCommand(PVCI_CAN_OBJ obj, const uint& len) {
     }
     return true;
   }
+  */
 
   if (0 != delay_time) {
     for (size_t i = 0; i < len; i++) {
@@ -571,7 +574,6 @@ void MotorReader::FeedbackCallback() {
     }
     GetFeedback(&state, rec_obj);
 
-    /*
         std::cout << "the velocity is : ";
         for (size_t j = 0; j < state.velocity.size(); j++) {
           std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
@@ -583,7 +585,6 @@ void MotorReader::FeedbackCallback() {
           std::cout << std::dec << std::fixed << state.position[j] << "  ";
         }
         std::cout << std::endl;
-    */
     loop_count++;
 
     bool if_pub = true;

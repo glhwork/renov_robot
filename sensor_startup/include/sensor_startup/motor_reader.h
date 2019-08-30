@@ -164,6 +164,7 @@ class MotorReader {
   double home_kd;
 
   bool if_need_feedback[8];
+  int frame_len;
 
   /* GLOBAL VARIABLES */
  protected:

@@ -2,7 +2,7 @@
   <node pkg="mobile_robot" type="mobile_platform_homing_ros.py" name="homing_ros" />
   <include file="$(find mobile_base_description)/launch/static_transformation.launch" />
   <include file="$(find sensor_startup)/launch/motor_bringup.launch" />
-  <!-- <include file="$(find sensor_startup)/launch/imu_bringup.launch" />-->
+  <include file="$(find sensor_startup)/launch/imu_bringup.launch" />
   <include file="$(find robot_pose_ekf)/launch/robot_pose_ekf.launch" />
  
 </launch>
