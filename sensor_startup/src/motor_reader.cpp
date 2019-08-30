@@ -574,17 +574,17 @@ void MotorReader::FeedbackCallback() {
     }
     GetFeedback(&state, rec_obj);
 
-        std::cout << "the velocity is : ";
-        for (size_t j = 0; j < state.velocity.size(); j++) {
-          std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
-        }
-        std::cout << std::endl;
+    std::cout << "the velocity is : ";
+    for (size_t j = 0; j < state.velocity.size(); j++) {
+      std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
+    }
+    std::cout << std::endl;
 
-        std::cout << "the position is : ";
-        for (size_t j = 0; j < state.position.size(); j++) {
-          std::cout << std::dec << std::fixed << state.position[j] << "  ";
-        }
-        std::cout << std::endl;
+    std::cout << "the position is : ";
+    for (size_t j = 0; j < state.position.size(); j++) {
+      std::cout << std::dec << std::fixed << state.position[j] << "  ";
+    }
+    std::cout << std::endl;
     loop_count++;
 
     bool if_pub = true;
@@ -643,7 +643,7 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
         0x00000000 == rec_obj[i].ID) {
       continue;
     }
-    std::cout << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
+ //   std::cout << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
 
     if (LEFT_MOTOR == rec_obj[i].Data[2]) {
       if (POSITION_FD == rec_obj[i].Data[1]) {
@@ -670,7 +670,7 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
     for (size_t j = 0; j < 8; j++) {
       std::cout << std::hex << "0x" << (int)rec_obj[i].Data[j] << "  ";
     }
-    std::cout << std::endl;
+//    std::cout << std::endl;
   }
 }
 
@@ -711,131 +711,6 @@ void MotorReader::FeedbackReq() {
       SendCommand(position_fb_obj, 2);
       delete[] position_fb_obj;
     }
-  }
-}
-
-void MotorReader::VelPosiFeedbackReq(const bool& use_velocity_req,
-                                     const bool& use_position_req) {
-  if (use_velocity_req) {
-    PVCI_CAN_OBJ vel_obj = GetVciObject(8);
-    int vel_req_len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
-                      sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
-    for (size_t i = 0; i < 4; i++) {
-      vel_obj[i * 2].ID += cob_id[i];
-      vel_obj[i * 2].DataLen = vel_req_len;
-      DataInitial(vel_obj[i * 2].Data, cmd.BASE_VELOCITY_FEEDBACK, vel_req_len);
-      vel_obj[i * 2].Data[2] = LEFT_MOTOR;
-
-      vel_obj[i * 2 + 1].ID += cob_id[i];
-      vel_obj[i * 2 + 1].DataLen = vel_req_len;
-      DataInitial(vel_obj[i * 2 + 1].Data, cmd.BASE_VELOCITY_FEEDBACK,
-                  vel_req_len);
-      vel_obj[i * 2 + 1].Data[2] = RIGHT_MOTOR;
-    }
-
-    SendCommand(vel_obj, 8);
-    delete[] vel_obj;
-  }
-
-  if (use_position_req) {
-    PVCI_CAN_OBJ position_obj = GetVciObject(8);
-    int position_req_len = sizeof(cmd.BASE_POSITION_FEEDBACK) /
-                           sizeof(cmd.BASE_POSITION_FEEDBACK[0]);
-    for (size_t i = 0; i < 4; i++) {
-      position_obj[i * 2].ID += cob_id[i];
-      position_obj[i * 2].DataLen = position_req_len;
-      DataInitial(position_obj[i * 2].Data, cmd.BASE_POSITION_FEEDBACK,
-                  position_req_len);
-      position_obj[i * 2].Data[2] = LEFT_MOTOR;
-
-      position_obj[i * 2 + 1].ID += cob_id[i];
-      position_obj[i * 2 + 1].DataLen = position_req_len;
-      DataInitial(position_obj[i * 2 + 1].Data, cmd.BASE_POSITION_FEEDBACK,
-                  position_req_len);
-      position_obj[i * 2 + 1].Data[2] = RIGHT_MOTOR;
-    }
-
-    SendCommand(position_obj, 8);
-    delete[] position_obj;
-  }
-}
-
-void MotorReader::FrontRearFeedbackReq(const bool& if_read_front,
-                                       const bool& if_read_rear) {
-  if (if_read_front) {
-    PVCI_CAN_OBJ front_obj = GetVciObject(8);
-    for (size_t i = 0; i < 2; i++) {
-      int front_position_len;
-
-      front_position_len = sizeof(cmd.BASE_POSITION_FEEDBACK) /
-                           sizeof(cmd.BASE_POSITION_FEEDBACK[0]);
-      front_obj[i * 4 + 0].ID += cob_id[i * 2];
-      front_obj[i * 4 + 0].DataLen = front_position_len;
-      DataInitial(front_obj[i * 4 + 0].Data, cmd.BASE_POSITION_FEEDBACK,
-                  front_position_len);
-      front_obj[i * 4 + 0].Data[2] = LEFT_MOTOR;
-
-      front_obj[i * 4 + 1].ID += cob_id[i * 2];
-      front_obj[i * 4 + 1].DataLen = front_position_len;
-      DataInitial(front_obj[i * 4 + 1].Data, cmd.BASE_POSITION_FEEDBACK,
-                  front_position_len);
-      front_obj[i * 4 + 1].Data[2] = RIGHT_MOTOR;
-
-      int front_velocity_len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
-                               sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
-      front_obj[i * 4 + 2].ID += cob_id[i * 2];
-      front_obj[i * 4 + 2].DataLen = front_velocity_len;
-      DataInitial(front_obj[i * 4 + 2].Data, cmd.BASE_VELOCITY_FEEDBACK,
-                  front_velocity_len);
-      front_obj[i * 4 + 2].Data[2] = LEFT_MOTOR;
-
-      front_obj[i * 4 + 3].ID += cob_id[i * 2];
-      front_obj[i * 4 + 3].DataLen = front_velocity_len;
-      DataInitial(front_obj[i * 4 + 3].Data, cmd.BASE_VELOCITY_FEEDBACK,
-                  front_velocity_len);
-      front_obj[i * 4 + 3].Data[2] = RIGHT_MOTOR;
-    }
-
-    SendCommand(front_obj, 8);
-    delete[] front_obj;
-  }
-
-  if (if_read_rear) {
-    PVCI_CAN_OBJ rear_obj = GetVciObject(8);
-    for (size_t i = 0; i < 2; i++) {
-      int rear_position_len;
-
-      rear_position_len = sizeof(cmd.BASE_POSITION_FEEDBACK) /
-                          sizeof(cmd.BASE_POSITION_FEEDBACK[0]);
-      rear_obj[i * 4 + 0].ID += cob_id[i * 2 + 1];
-      rear_obj[i * 4 + 0].DataLen = rear_position_len;
-      DataInitial(rear_obj[i * 4 + 0].Data, cmd.BASE_POSITION_FEEDBACK,
-                  rear_position_len);
-      rear_obj[i * 4 + 0].Data[2] = LEFT_MOTOR;
-
-      rear_obj[i * 4 + 1].ID += cob_id[i * 2 + 1];
-      rear_obj[i * 4 + 1].DataLen = rear_position_len;
-      DataInitial(rear_obj[i * 4 + 1].Data, cmd.BASE_POSITION_FEEDBACK,
-                  rear_position_len);
-      rear_obj[i * 4 + 1].Data[2] = RIGHT_MOTOR;
-
-      int rear_velocity_len = sizeof(cmd.BASE_VELOCITY_FEEDBACK) /
-                              sizeof(cmd.BASE_VELOCITY_FEEDBACK[0]);
-      rear_obj[i * 4 + 2].ID += cob_id[i * 2 + 1];
-      rear_obj[i * 4 + 2].DataLen = rear_velocity_len;
-      DataInitial(rear_obj[i * 4 + 2].Data, cmd.BASE_VELOCITY_FEEDBACK,
-                  rear_velocity_len);
-      rear_obj[i * 4 + 2].Data[2] = LEFT_MOTOR;
-
-      rear_obj[i * 4 + 3].ID += cob_id[i * 2 + 1];
-      rear_obj[i * 4 + 3].DataLen = rear_velocity_len;
-      DataInitial(rear_obj[i * 4 + 3].Data, cmd.BASE_VELOCITY_FEEDBACK,
-                  rear_velocity_len);
-      rear_obj[i * 4 + 3].Data[2] = RIGHT_MOTOR;
-    }
-
-    SendCommand(rear_obj, 8);
-    delete[] rear_obj;
   }
 }
 

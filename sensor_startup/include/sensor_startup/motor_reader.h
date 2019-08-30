@@ -65,10 +65,6 @@ class MotorReader {
 
   void StopMotor();
   void FeedbackReq();
-  void VelPosiFeedbackReq(const bool& use_velocity_req,
-                          const bool& use_position_req);
-  void FrontRearFeedbackReq(const bool& if_read_front,
-                            const bool& if_read_rear);
   void GetFeedback(sensor_msgs::JointState* state, const PVCI_CAN_OBJ rec_obj);
   std::vector<int> CommandTransform(const std::vector<float>& raw_state);
   void PrintTest(BYTE* data, const int& len, const std::string& str);
