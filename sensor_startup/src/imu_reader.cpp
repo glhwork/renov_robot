@@ -210,13 +210,13 @@ void ImuReader::DataParser(const std::vector<uint8_t>& data) {
     imu_msg.orientation.y = q.y();
     imu_msg.orientation.z = q.z();
     imu_msg.orientation.w = q.w();
-    imu_msg.orientation_covariance = {1e-5, 0, 0, 0, 1e-5, 0, 0, 0, 1e-5};
+    imu_msg.orientation_covariance = {1e6, 0, 0, 0, 1e6, 0, 0, 0, 1e-6};
 
     // get angular velocity
     imu_msg.angular_velocity.x = vec(6) / 180.0 * M_PI;
     imu_msg.angular_velocity.y = vec(7) / 180.0 * M_PI;
     imu_msg.angular_velocity.z = vec(8) / 180.0 * M_PI;
-    imu_msg.angular_velocity_covariance = {1e-5, 0, 0, 0, 1e-5, 0, 0, 0, 1e-5};
+    imu_msg.angular_velocity_covariance = {1e6, 0, 0, 0, 1e6, 0, 0, 0, 1e-6};
 
     // get linear acceleration (value * g)
     imu_msg.linear_acceleration.x = vec(3);

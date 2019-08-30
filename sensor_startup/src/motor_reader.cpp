@@ -608,13 +608,6 @@ void MotorReader::FeedbackCallback() {
     std::cout << "==================" << std::endl;
 
     if (if_pub) {
-      std::cout << "if_pub is true" << std::endl;
-      ROS_ERROR("if pub is true");
-    } else {
-      // std::cout << "if_pub is false" << std::endl;
-    }
-
-    if (if_pub) {
       for (size_t i = 0; i < 8; i++) {
         state.position[i] = (state.position[i] - home[i]) /
                             (freq_multiplier * encoder_s) * (2 * M_PI);
@@ -623,9 +616,7 @@ void MotorReader::FeedbackCallback() {
 
       PublishOdometry(state);
       state_pub.publish(state);
-      std::cout << "success and pub odom" << std::endl;
       delete[] rec_obj;
-      std::cout << "success and delete obj" << std::endl;
     } else {
       delete[] rec_obj;
     }
@@ -667,10 +658,12 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
         state->velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
       }
     }
+    /*(
     for (size_t j = 0; j < 8; j++) {
       std::cout << std::hex << "0x" << (int)rec_obj[i].Data[j] << "  ";
     }
-//    std::cout << std::endl;
+    std::cout << std::endl;
+    */
   }
 }
 
@@ -1160,9 +1153,16 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
 
   raw_odom.header = raw_pose.header;
   raw_odom.pose = filtered_pose.pose;
+  raw_odom.header.stamp = cur_time;
+
+  raw_odom.pose.covariance[0] = 1e-3;
+  raw_odom.pose.covariance[7] = 1e-3;
+  raw_odom.pose.covariance[14] = 1e6;
+  raw_odom.pose.covariance[21] = 1e6;
+  raw_odom.pose.covariance[28] = 1e6;
+  raw_odom.pose.covariance[35] = 1e3;
 
   ros::Time pre_time = raw_odom.header.stamp;
-  raw_odom.header.stamp = cur_time;
   tf::Quaternion quat_tmp(
       raw_odom.pose.pose.orientation.x, raw_odom.pose.pose.orientation.y,
       raw_odom.pose.pose.orientation.z, raw_odom.pose.pose.orientation.w);
@@ -1286,6 +1286,13 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     init_odom.pose.pose.orientation.x = init_odom.pose.pose.orientation.y =
         init_odom.pose.pose.orientation.z = 0.0;
     init_odom.pose.pose.orientation.w = 1.0;
+
+    init_odom.pose.covariance[0] = 1e-3;
+    init_odom.pose.covariance[7] = 1e-3;
+    init_odom.pose.covariance[14] = 1e6;
+    init_odom.pose.covariance[21] = 1e6;
+    init_odom.pose.covariance[28] = 1e6;
+    init_odom.pose.covariance[35] = 1e3;
 
     for (size_t i = 0; i < init_odom.pose.covariance.size(); i++) {
       if (i % 7 == 0) {
