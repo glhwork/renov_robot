@@ -8,6 +8,7 @@
     <param name="wait_time" value="-1"/>
     <param name="state_pub_period" value="0.1" />
     <param name="use_pack_data" value="false" />
+    <param name="if_debug" value="true" />
   </node>
 
 </launch>

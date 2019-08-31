@@ -66,6 +66,10 @@ void MotorReader::ParamInit() {
   if (!n_private.getParam("use_pack_data", use_pack_data)) {
     use_pack_data = true;
   }
+  if (!n_private.getParam("if_debug", if_debug)) {
+    if_debug = false;
+  }
+
 }
 
 void MotorReader::ReadFile(const std::string& address) {
@@ -573,6 +577,7 @@ void MotorReader::FeedbackCallback() {
     }
     GetFeedback(&state, rec_obj);
 
+    /*
     std::cout << "the velocity is : ";
     for (size_t j = 0; j < state.velocity.size(); j++) {
       std::cout << std::dec << std::fixed << state.velocity[j] << "  ";
@@ -585,6 +590,7 @@ void MotorReader::FeedbackCallback() {
     }
     std::cout << std::endl;
     loop_count++;
+    */
 
     bool if_pub = true;
     for (size_t i = 0; i < state.velocity.size() / 2; i++) {
@@ -608,7 +614,7 @@ void MotorReader::FeedbackCallback() {
                   "rear_left_walking",   "rear_right_walking",
                   "front_left_steering", "front_right_steering",
                   "rear_left_steering",  "rear_right_steering"};
-    std::cout << "home is : " << home[0] << "  " << home[1] << "  " << home[2] << "  " << home[3] << std::endl;
+    //std::cout << "home is : " << home[0] << "  " << home[1] << "  " << home[2] << "  " << home[3] << std::endl;
     std::cout << "==================" << std::endl;
 
     if (if_pub) {
@@ -616,8 +622,30 @@ void MotorReader::FeedbackCallback() {
       for (size_t i = 0; i < 8; i++) {
         state.position[i] = (state.position[i] - home_tmp[i]) /
                             (freq_multiplier * encoder_s * reduc_ratio_s) * (2 * M_PI);
+	state.position[i] = -1 * state.position[i] * pow(-1, motor_sign[i] + 1);
         state.velocity[i] = state.velocity[i] / reduc_ratio_w;
+	state.velocity[i] = state.velocity[i] * pow(-1, motor_sign[i] + 1);
       }
+
+
+      std::ofstream os;
+      os.open("/home/renov_robot/renov_ws/src/renov_robot/sensor_startup/debug/vel_and_position.txt", std::ios::app);
+      os << "the velocity is : [ ";
+      for (size_t j = 0; j < state.velocity.size(); j++) {
+        os << std::dec << std::fixed << std::setprecision(4) << state.velocity[j] << "  ";
+      }
+      os << " ]"<< std::endl;
+
+      os << "the position is : [ ";
+      for (size_t j = 0; j < state.position.size(); j++) {
+        os << std::dec << std::fixed << std::setprecision(4) << state.position[j] << "  ";
+      }
+      os << " ]"<< std::endl;
+      os << "======================================" << std::endl;
+      os.close();
+
+
+ 
 
       PublishOdometry(state);
       state_pub.publish(state);
@@ -631,8 +659,16 @@ void MotorReader::FeedbackCallback() {
 
 void MotorReader::GetFeedback(sensor_msgs::JointState* state,
                               const PVCI_CAN_OBJ rec_obj) {
+
+  uint pre_fb_time_stamp_vel[8] = {0, 0, 0, 0, 
+                                   0, 0, 0, 0};
+  uint pre_fb_time_stamp_posi[8] = {0, 0, 0, 0, 
+                                    0, 0, 0, 0};
+
   std::ofstream out;
-  out.open("/home/renov_robot/Desktop/tmp.txt");
+  if (if_debug) {
+    out.open("/home/renov_robot/Desktop/tmp.txt", std::ios::app);
+  }
   for (size_t i = 0; i < 2500; i++) {
     if (0x00000700 + cob_id[0] == rec_obj[i].ID ||
         0x00000700 + cob_id[1] == rec_obj[i].ID ||
@@ -641,47 +677,63 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
         0x00000000 == rec_obj[i].ID) {
       continue;
     }
- //   std::cout << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
-    out << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
-    for (size_t j = 0; j < 8; j++) {
-      out << std::hex << "0x" << (int)rec_obj[i].Data[j] << ",  ";
+    if (if_debug) {
+      out << "ID = " << std::hex << "0x" << (int)rec_obj[i].ID << " : ";
+    //  for (size_t j = 0; j < 8; j++) {
+        //out << std::hex << "0x" << (int)rec_obj[i].Data[j] << ",  ";
+	out << std::dec << FourByteHex2Int(&rec_obj[i].Data[4]);
+     // }
+      out << std::dec << "  ->  TimeStamp : " << rec_obj[i].TimeStamp;
+      out << std::endl;
     }
-    out << std::endl;
-  
+
     if (LEFT_MOTOR == rec_obj[i].Data[2]) {
       if (POSITION_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
-        state->position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-	if (state->name[index].find("_1") > state->name.size()) {
+	if (rec_obj[i].TimeStamp > pre_fb_time_stamp_posi[index]) {
+          state->position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
           state->name[index] = state->name[index] + "_1";
+	  pre_fb_time_stamp_posi[index] = rec_obj[i].TimeStamp;
+	} else {
+	  continue;
 	}
       }
       if (VELOCITY_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID - 1);
-        state->velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+	if (rec_obj[i].TimeStamp > pre_fb_time_stamp_vel[index]) {
+          state->velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+	  pre_fb_time_stamp_vel[index] = rec_obj[i].TimeStamp;
+	} else {
+	  continue;
+	}
       }
     }
+
     if (RIGHT_MOTOR == rec_obj[i].Data[2]) {
       if (POSITION_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
-        state->position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
-	if (state->name[index].find("_1") > state->name.size()) {
+	if (rec_obj[i].TimeStamp > pre_fb_time_stamp_posi[index]) {
+          state->position[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
           state->name[index] = state->name[index] + "_1";
+	  pre_fb_time_stamp_posi[index] = rec_obj[i].TimeStamp;
+	} else {
+	  continue;
 	}
       }
       if (VELOCITY_FD == rec_obj[i].Data[1]) {
         int index = 2 * (rec_obj[i].ID - REC_BASE_ID) - 1;
-        state->velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+	if (rec_obj[i].TimeStamp > pre_fb_time_stamp_vel[index]) {
+          state->velocity[index] = FourByteHex2Int(&rec_obj[i].Data[4]);
+	  pre_fb_time_stamp_vel[index] = rec_obj[i].TimeStamp;
+	}
       }
     }
-    /*(
-    for (size_t j = 0; j < 8; j++) {
-      std::cout << std::hex << "0x" << (int)rec_obj[i].Data[j] << "  ";
-    }
-    std::cout << std::endl;
-    */
   }
-  out.close();
+  if (if_debug) { 
+    out << "================================" << std::endl;
+    out << std::endl;
+    out.close();
+  }
 }
 
 void MotorReader::FeedbackReq() {
@@ -1179,7 +1231,6 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
   raw_odom.pose.covariance[28] = 1e6;
   raw_odom.pose.covariance[35] = 1e3;
 
-  ros::Time pre_time = raw_odom.header.stamp;
   tf::Quaternion quat_tmp(
       raw_odom.pose.pose.orientation.x, raw_odom.pose.pose.orientation.y,
       raw_odom.pose.pose.orientation.z, raw_odom.pose.pose.orientation.w);
@@ -1189,6 +1240,7 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
 
   // determine the time between two updates
   double dt = cur_time.toSec() - pre_time.toSec();
+  pre_time = cur_time;
 
   std::vector<double> motor_position_vec = {
       joint_state.position[4], joint_state.position[5], joint_state.position[6],
@@ -1209,16 +1261,22 @@ void MotorReader::PublishOdometry(const sensor_msgs::JointState& joint_state) {
                 (fabs(fabs(preset_steer_angle) - fabs(motor_position_vec[i])) <
                  variance_limit);
   }
-
   double motor_velo_mean;
   double steer_variance = fabs(GetVariance(motor_position_vec));
+
   if (sqrt(steer_variance) < variance_limit) {
     double steer_angle_mean = ComputeMean(motor_position_vec);
     motor_velo_mean = ComputeMean(motor_velocity_vec);
+    std::cout << "mean steer : " << steer_angle_mean << std::endl;
+    std::cout << "mean velo : " << motor_velo_mean << std::endl;
     // set position value
+    std::cout << "x pose before : " << raw_odom.pose.pose.position.x << std::endl;
+    std::cout << "global angel : " << steer_angle_mean + yaw << std::endl;
+    std::cout << "dt is : " << std::setprecision(8) << dt << std::endl;
     raw_odom.pose.pose.position.x =
         raw_odom.pose.pose.position.x +
         motor_velo_mean * cos(steer_angle_mean + yaw) * dt;
+    std::cout << "x pose after : " << raw_odom.pose.pose.position.x << std::endl;
     raw_odom.pose.pose.position.y =
         raw_odom.pose.pose.position.y +
         motor_velo_mean * sin(steer_angle_mean + yaw) * dt;
@@ -1291,6 +1349,7 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
     }
     // std::cout << std::endl;
 
+    pre_time =
     cur_time = ros::Time::now();
     nav_msgs::Odometry init_odom;
     init_odom.header.frame_id = "odom";

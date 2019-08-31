@@ -118,6 +118,8 @@ class MotorReader {
   double state_pub_period;
   // to determine whether sending multiple commands once
   bool use_pack_data;
+  // print some information for debugging
+  bool if_debug;
 
   /* CONFIG PARAMETERS */
   YAML::Node param;
