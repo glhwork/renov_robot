@@ -34,6 +34,14 @@ struct IdConfig {
   int steer_chn2;
 };
 
+struct FeedbackDebugData {
+  uint id;
+  uint time_stamp;
+  int value; 
+  uint8_t side;
+};
+typedef std::vector<FeedbackDebugData> FbDebugDataVec;
+
 enum MotionMode { FORWARD, ROTATE };
 
 class MotorReader {
@@ -163,6 +171,7 @@ class MotorReader {
 
   bool if_need_feedback[8];
   int frame_len;
+  FbDebugDataVec fb_debug_data;
 
   /* GLOBAL VARIABLES */
  protected:

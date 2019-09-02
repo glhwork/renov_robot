@@ -615,6 +615,31 @@ void MotorReader::FeedbackCallback() {
         state.velocity[i] = state.velocity[i] * pow(-1, motor_sign[i] + 1);
       }
 
+      if ((fabs(state.velocity[0]) < 0.001) ||
+          (fabs(state.velocity[1]) < 0.001) ||
+          (fabs(state.velocity[2]) < 0.001) ||
+          (fabs(state.velocity[3]) < 0.001)) {
+        std::ofstream vel_debug_file;
+        vel_debug_file.open(
+            "/home/renov_robot/renov_ws/src/renov_robot/sensor_startup/debug/"
+            "fb_debug.txt",
+            std::ios::app);
+        for (size_t i = 0; i < fb_debug_data.size(); i++) {
+          vel_debug_file << std::hex << "ID = "
+                         << "0x" << fb_debug_data[i].id << " : ";
+          if (fb_debug_data[i].side == LEFT_MOTOR) {
+            vel_debug_file << " left ";
+          } else if (fb_debug_data[i].side == RIGHT_MOTOR) {
+            vel_debug_file << " right ";
+          }
+          vel_debug_file << std::dec << fb_debug_data[i].value << "  ";
+          vel_debug_file << std::dec << "TimeStamp -> "
+                         << fb_debug_data[i].time_stamp << std::endl;
+        }
+        vel_debug_file << "===================================" << std::endl;
+        vel_debug_file.close();
+      }
+
       std::ofstream os;
       os.open(
           "/home/renov_robot/renov_ws/src/renov_robot/sensor_startup/debug/"
@@ -651,6 +676,7 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
   uint pre_fb_time_stamp_vel[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   uint pre_fb_time_stamp_posi[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
+  fb_debug_data.clear();
   std::ofstream out;
   if (if_debug) {
     out.open("/home/renov_robot/Desktop/tmp.txt", std::ios::app);
@@ -671,6 +697,16 @@ void MotorReader::GetFeedback(sensor_msgs::JointState* state,
       // }
       out << std::dec << "  ->  TimeStamp : " << rec_obj[i].TimeStamp;
       out << std::endl;
+    }
+
+    uint id_tmp = rec_obj[i].ID;
+    if (0x00000581 == id_tmp || 0x00000582 == id_tmp) {
+      FeedbackDebugData debug_data;
+      debug_data.id = id_tmp;
+      debug_data.time_stamp = rec_obj[i].TimeStamp;
+      debug_data.value = FourByteHex2Int(&rec_obj[i].Data[4]);
+      debug_data.side = rec_obj[i].Data[2];
+      fb_debug_data.push_back(debug_data);
     }
 
     if (LEFT_MOTOR == rec_obj[i].Data[2]) {
@@ -1448,19 +1484,6 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
 }
 
 void MotorReader::Loop() {
-  // control_sub =
-  //     nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback,
-  //     this);
-  // home_sub = nh.subscribe("mobile_platform_driver_position_feedback", 10,
-  //                         &MotorReader::GetHomeCallback, this);
-  // teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback,
-  // this); stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback,
-  // this); odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback,
-  // this);
-
-  // ros::Timer feedback_timer =
-  //     nh.createTimer(ros::Duration(0.1), &MotorReader::FeedbackCallback,
-  //     this);
   state_pub_thread =
       new boost::thread(boost::bind(&MotorReader::FeedbackCallback, this));
 }
