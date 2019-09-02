@@ -76,10 +76,12 @@ class MotorReader {
   void PublishOdometry(const sensor_msgs::JointState& joint_state);
   void OdomCallback(const geometry_msgs::PoseWithCovarianceStamped& odom_msg);
   double GetVariance(const std::vector<double>& data_vec);
+  // double GetVariance(const double* data_vec, const int& len);
   double ComputeMean(const std::vector<double>& data_vec);
   void Loop();
 
   void GetHomeCallback(const std_msgs::Int64MultiArray& home_state);
+  void VelocityCmdOdom(const double& period);
 
  protected:
   // COBID of multiple motor drivers
@@ -162,6 +164,7 @@ class MotorReader {
   double home_kd;
 
   bool if_need_feedback[8];
+  bool if_update_cov_matrix;
   int frame_len;
 
   /* GLOBAL VARIABLES */
@@ -187,6 +190,8 @@ class MotorReader {
 
   // nav_msgs::Odometry raw_odom;
   geometry_msgs::PoseWithCovarianceStamped filtered_pose;
+  nav_msgs::Odometry raw_odom_vel;
+  double motor_state[8];
   /* THREADS */
   boost::thread* state_pub_thread;
 

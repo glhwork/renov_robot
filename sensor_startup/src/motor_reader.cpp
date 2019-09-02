@@ -13,6 +13,9 @@ MotorReader::MotorReader() {
   if_get_ekf_odom = false;
   state_pub_thread = NULL;
 
+  raw_odom_vel.header.frame_id = "odom";
+  raw_odom_vel.child_frame_id = "base_footprint";
+
   double frt = param["front_rear_track"].as<double>();
   double lrt = param["left_right_track"].as<double>();
 
@@ -55,6 +58,9 @@ void MotorReader::ParamInit() {
   }
   if (!n_private.getParam("if_debug", if_debug)) {
     if_debug = false;
+  }
+  if (!n_private.getParam("if_update_cov_matrix", if_update_cov_matrix)) {
+    if_update_cov_matrix = false;
   }
 }
 
@@ -474,6 +480,13 @@ void MotorReader::ControlCallback(const sensor_msgs::JointState& joint_state) {
   //	                              << state_cmds[4] << "  " << state_cmds[5]
   //<< "  " << state_cmds[6] << "  " << state_cmds[7] << std::endl;
   ControlMotor(state_cmds);
+
+  for (size_t i = 0; i < 4; i++) {
+    motor_state[i] = joint_state.velocity[i];
+  }
+  for (size_t i = 0; i < 4; i++) {
+    motor_state[i + 4] = joint_state.position[i + 4];
+  }
 }
 
 void MotorReader::DataTransform(BYTE* data, uint8_t* cmd, const uint& len,
@@ -1447,22 +1460,87 @@ void MotorReader::GetHomeCallback(const std_msgs::Int64MultiArray& home_state) {
   }
 }
 
-void MotorReader::Loop() {
-  // control_sub =
-  //     nh.subscribe("cmd_base_joint", 10, &MotorReader::ControlCallback,
-  //     this);
-  // home_sub = nh.subscribe("mobile_platform_driver_position_feedback", 10,
-  //                         &MotorReader::GetHomeCallback, this);
-  // teleop_sub = nh.subscribe("cmd_vel", 10, &MotorReader::TeleopCallback,
-  // this); stop_sub = nh.subscribe("stop", 10, &MotorReader::StopCallback,
-  // this); odom_sub = nh.subscribe("odom", 10, &MotorReader::OdomCallback,
-  // this);
+void MotorReader::VelocityCmdOdom(const double& period) {
+  // period : unit -> second
+  ros::Rate r(1 / period);
+  while (ros::ok()) {
+    // judge whether forward or rotate
+    bool if_forward = true;
+    std::vector<double> state_tmp = {motor_state[4], motor_state[5],
+                                     motor_state[6], motor_state[7]};
+    double vel_variance = GetVariance(state_tmp);
+    if_forward = (sqrt(vel_variance) < 0.001);
 
-  // ros::Timer feedback_timer =
-  //     nh.createTimer(ros::Duration(0.1), &MotorReader::FeedbackCallback,
-  //     this);
+    bool if_rotate = true;
+    for (size_t i = 4; i < 8; i++) {
+      if_rotate = if_rotate &&
+                  (fabs(fabs(motor_state[i]) - preset_steer_angle) < 0.001);
+    }
+
+    // update odom data;
+    raw_odom_vel.header.stamp = ros::Time::now();
+    tf::Quaternion quat_tmp(raw_odom_vel.pose.pose.orientation.x,
+                            raw_odom_vel.pose.pose.orientation.y,
+                            raw_odom_vel.pose.pose.orientation.z,
+                            raw_odom_vel.pose.pose.orientation.w);
+    tf::Matrix3x3 rpy_matrix(quat_tmp);
+    double roll, pitch, yaw;
+    rpy_matrix.getRPY(roll, pitch, yaw);
+    if (!if_update_cov_matrix) {
+      raw_odom_vel.pose.covariance[0] = 1e-3;
+      raw_odom_vel.pose.covariance[7] = 1e-3;
+      raw_odom_vel.pose.covariance[14] = 1e6;
+      raw_odom_vel.pose.covariance[21] = 1e6;
+      raw_odom_vel.pose.covariance[28] = 1e6;
+      raw_odom_vel.pose.covariance[35] = 1e3;
+    } else {
+      ;
+    }
+
+    if (if_forward) {
+      raw_odom_vel.pose.pose.position.x +=
+          motor_state[0] * cos(yaw + motor_state[4]) * period;
+      raw_odom_vel.pose.pose.position.y +=
+          motor_state[0] * sin(yaw + motor_state[4]) * period;
+    } else if (if_rotate) {
+      double angular_v = -motor_state[0] * wheel_radius / base_rotate_radius;
+      /*
+      if (motor_state[0] > 0) {
+        angular_v = -fabs(angular_v);
+      } else {
+        angular_v = fabs(angular_v);
+      }
+      */
+
+      double yaw = yaw + angular_v * period;
+      if (fabs(yaw) > M_PI) {
+        if (yaw > 0) {
+          yaw = -(2 * M_PI - fabs(yaw));
+        } else if (yaw < 0) {
+          yaw = 2 * M_PI - fabs(yaw);
+        }
+      }
+      tf::Quaternion q = tf::createQuaternionFromRPY(roll, pitch, yaw);
+      raw_odom_vel.pose.pose.position.z = 0.0;
+
+      // difference between q.x() and q.getX()
+      raw_odom_vel.pose.pose.orientation.x = q.x();
+      raw_odom_vel.pose.pose.orientation.y = q.y();
+      raw_odom_vel.pose.pose.orientation.z = q.z();
+      raw_odom_vel.pose.pose.orientation.w = q.w();
+    } else {
+      ROS_ERROR("Incorrect state");
+    }
+    raw_odom_pub.publish(raw_odom_vel);
+    r.sleep();
+  }
+}
+
+void MotorReader::Loop() {
+  // state_pub_thread =
+  //     new boost::thread(boost::bind(&MotorReader::FeedbackCallback, this));
   state_pub_thread =
-      new boost::thread(boost::bind(&MotorReader::FeedbackCallback, this));
+      new boost::thread(boost::bind(&MotorReader::VelocityCmdOdom, this, 0.1));
 }
 /*
 void MotorReader::ModifyGetOdomFlag() {
