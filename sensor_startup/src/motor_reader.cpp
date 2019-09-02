@@ -1521,7 +1521,6 @@ void MotorReader::VelocityCmdOdom(const double& period) {
         }
       }
       tf::Quaternion q = tf::createQuaternionFromRPY(roll, pitch, yaw);
-      raw_odom_vel.pose.pose.position.z = 0.0;
 
       // difference between q.x() and q.getX()
       raw_odom_vel.pose.pose.orientation.x = q.x();
