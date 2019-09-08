@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "sensor_startup/kinco/can_application.h"
+#include "can_application.h"
 
 namespace mobile_base {
 
