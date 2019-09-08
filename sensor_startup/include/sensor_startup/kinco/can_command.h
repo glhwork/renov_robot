@@ -26,6 +26,9 @@ struct CanCommand {
   _u8 SET_CURRENT_MODE[1] = {1}; 
   _u8 ENABLE_MOTOR[1] = {1}; 
 
+  _u8 VELOCITY_COMMAND[1] = {1}; 
+  _u8 POSITION_COMMAND[1] = {1}; 
+  _u8 CURRENT_COMMAND[1] = {1}; 
 };  // struct CanCommand
 
 }  // namespace mobile_base

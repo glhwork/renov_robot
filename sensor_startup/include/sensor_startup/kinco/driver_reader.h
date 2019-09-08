@@ -24,17 +24,22 @@ class DriverReader : public CanApplication {
   bool DriverEnable();
   bool DriverSetMode();
 
-  void SendVelocity();
-  void SendPosition();
+  void ControlMotor(const std::vector<int>& control_signal);
+  std::vector<int> ControlSignalTransform(const std::vector<int>& raw_signal);
+  void SendVelocity(uint* id, int* target_velocity, const int& len);
+  void SendPosition(uint* id, int* target_position, const int& len);
+  void SendCurrent(uint* id, int* target_current, const int& len);
+  void GetHomePosition(int* home_signal, const int& len);
   void DriverDiagnostic();
 
   void DataInitial(u_char* data, uint8_t* cmd, const uint& cmd_len);
+  void Dec2HexVector(u_char* data_vec, const int& dec_value);
   int FourByteHex2Int(uint8_t* data_vec, const int& data_vec_len);
 
  private:
   /* PARAMETERS READ FROM YAML FILE */
-  int walking_mode;
-  int steering_mode;
+  int walking_mode_;
+  int steering_mode_;
   int encoder_s_;
   int encoder_w_;
   int frequency_multiplier_;
@@ -44,11 +49,14 @@ class DriverReader : public CanApplication {
   int walk_id_num_;
   int steer_id_num_;
   int id_num_;
-  uint* cob_id;
+  uint* cob_id_;
+  int* motor_sign_;
 
   /* */
-  CanCommand can_cmd;
-  
+  CanCommand can_cmd_;
+  int* home_position_;
+  bool if_steer_home_;
+
 };  // class DriverReader
 
 }  // namespace mobile_base
