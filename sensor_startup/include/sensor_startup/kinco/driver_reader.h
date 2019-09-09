@@ -36,6 +36,12 @@ class DriverReader : public CanApplication {
   void Dec2HexVector(u_char* data_vec, const int& dec_value);
   int FourByteHex2Int(uint8_t* data_vec, const int& data_vec_len);
 
+ protected:
+  /* PARAMETERS READ FROM YAML FILE */
+  int id_num_;
+  int walk_id_num_;
+  int steer_id_num_;
+
  private:
   /* PARAMETERS READ FROM YAML FILE */
   int walking_mode_;
@@ -46,9 +52,6 @@ class DriverReader : public CanApplication {
   double reduc_ratio_s_;
   double reduc_ratio_w_;
   int max_velocity_;
-  int walk_id_num_;
-  int steer_id_num_;
-  int id_num_;
   uint* cob_id_;
   int* motor_sign_;
 
