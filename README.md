@@ -12,33 +12,58 @@ mail : georgeglh@link.cuhk.edu.hk
 
 ### 2.1 LiDAR driver
 
-document : <http://wiki.ros.org/sick_tim>
+reference document : <http://wiki.ros.org/sick_tim>
 
-clone from git : <https://github.com/uos/sick_tim>
+clone from git : 
+
+```shell
+$ git clone https://github.com/uos/sick_tim.git
+```
 
 ### 2.2 open source SLAM
 
-document : <http://wiki.ros.org/gmapping>
+reference document : <http://wiki.ros.org/gmapping>
 
-clone from git(openslam_gmapping) : <https://github.com/ros-perception/openslam_gmapping>
+clone from git (openslam_gmapping) : 
 
-clone from git(gmapping) : <https://github.com/ros-perception/slam_gmapping>
+```shell
+$ git clone https://github.com/ros-perception/openslam_gmapping.git
+```
+
+clone from git(gmapping) : 
+
+```shell
+$ git clone https://github.com/ros-perception/slam_gmapping.git
+```
+or :
+```shell
+$ sudo apt-get install ros-kinetic-<distro>-gmapping
+```
 
 ### 2.3 robot_pose_ekf
 
-document : <http://wiki.ros.org/robot_pose_ekf>
+reference document : <http://wiki.ros.org/robot_pose_ekf>
 
-get : sudo apt-get install ros-[distro]-robot-pose-ekf
+get pkg: 
+```shell
+$ sudo apt-get install ros-<distro>-robot-pose-ekf
+```
 
 ### 2.4 serial port communication
 
-get : sudo apt-get install ros-[distro]-serial
+get pkg: 
+```shell
+$ sudo apt-get install ros-<distro>-serial
+```
 
 ### 2.5 imu_tools
 
-document : <http://wiki.ros.org/imu_tools>
+reference document : <http://wiki.ros.org/imu_tools>
 
-clone from git : <https://github.com/ccny-ros-pkg/imu_tools/tree/kinetic>
+clone from git :
+```shell
+$ git clone https://github.com/ccny-ros-pkg/imu_tools.git
+```
 
 ## 3 Pkgs && Nodes
 
