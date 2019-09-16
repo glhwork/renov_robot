@@ -1,2 +1,3 @@
 .vscode
 *.swp
+/sensor_startup/debug_data/driver_init_data.txt

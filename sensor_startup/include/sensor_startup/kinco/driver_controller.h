@@ -18,7 +18,7 @@ class DriverController : public CanApplication {
  public:
   DriverController();
   virtual ~DriverController();
-  void ReadFile(const std::string& relative_file_address);
+  void ReadDriverFile(const std::string& relative_file_address);
 
   bool DriverInit();
   void StartPDO();

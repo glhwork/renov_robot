@@ -1,4 +1,5 @@
 #include "sensor_startup/kinco/driver_controller.h"
+#include <unistd.h>
 
 namespace mobile_base {
 
@@ -9,15 +10,18 @@ DriverController::DriverController() : CanApplication() {
 
 DriverController::~DriverController() { delete[] cob_id_; }
 
-void DriverController::ReadFile(const std::string& relative_file_address) {
+void DriverController::ReadDriverFile(const std::string& relative_file_address) {
   std::string final_file_address = base_file_address_ + relative_file_address;
   if (if_debug_) {
+    std::cout << "relative is : " << relative_file_address << std::endl;
     std::cout << "Address of yaml file is : " << final_file_address
               << std::endl;
   }
   YAML::Node driver_config = YAML::LoadFile(final_file_address);
+  std::cout << "read yaml driver file" << std::endl;
 
   walking_mode_ = driver_config["walking_mode"].as<int>();
+  std::cout << "get mode " << std::endl;
   steering_mode_ = driver_config["steering_mode"].as<int>();
 
   encoder_s_ = driver_config["encoder_s"].as<int>();
@@ -32,6 +36,7 @@ void DriverController::ReadFile(const std::string& relative_file_address) {
   id_num_ = walk_id_num_ + steer_id_num_;
 
   home_position_ = new int[steer_id_num_];
+  std::cout << "before id " << std::endl;
 
   cob_id_ = new uint[id_num_];
   for (size_t i = 0; i < id_num_; i++) {
@@ -58,6 +63,7 @@ bool DriverController::DriverInit() {
   }
 
   StartPDO();
+  sleep(2);
 
   if (!DriverStart()) {
     std::cout << "Error!! The drivers starts with failure" << std::endl;
@@ -71,6 +77,7 @@ bool DriverController::DriverInit() {
 }
 
 void DriverController::StartPDO() {
+/*
   PVCI_CAN_OBJ pdo_start_obj = GetVciObject(id_num_, NMT_MODULE_CONTROL_ID);
 
   uint cmd_len =
@@ -85,16 +92,35 @@ void DriverController::StartPDO() {
     init_data_file_ << "*****************" << std::endl;
     for (size_t i = 0; i < id_num_; i++) {
       init_data_file_ << "start pdo commands -> ";
-      init_data_file_ << "data len : " << pdo_start_obj[i].DataLen << " ";
+      init_data_file_ << "data len : " << (int)pdo_start_obj[i].DataLen << " ";
       init_data_file_ << std::hex << "id is 0x" << pdo_start_obj[i].ID << " : ";
-      init_data_file_ << std::hex << "0x" << pdo_start_obj[i].Data[0] << "  0x"
-                      << pdo_start_obj[i].Data[1] << std::endl;
+      init_data_file_ << std::hex << "0x" << (int)pdo_start_obj[i].Data[0] << "  0x"
+                      << (int)pdo_start_obj[i].Data[1] << std::endl;
     }
     init_data_file_ << "*****************" << std::endl;
   }
 
   SendCommand(pdo_start_obj, id_num_);
   delete[] pdo_start_obj;
+  */
+
+  PVCI_CAN_OBJ pdo_start_obj = GetVciObject(1, NMT_MODULE_CONTROL_ID);
+  pdo_start_obj->DataLen = 2;
+  pdo_start_obj->Data[0] = 0x01;
+  pdo_start_obj->Data[1] = 0x00;
+  if (if_debug_) {
+    init_data_file_ << "*****************" << std::endl;
+    for (size_t i = 0; i < 1; i++) {
+      init_data_file_ << "start pdo commands -> ";
+      init_data_file_ << "data len : " << (int)pdo_start_obj[i].DataLen << " ";
+      init_data_file_ << std::hex << "id is 0x" << pdo_start_obj[i].ID << " : ";
+      init_data_file_ << std::hex << "0x" << (int)pdo_start_obj[i].Data[0] << "  0x"
+                      << (int)pdo_start_obj[i].Data[1] << std::endl;
+    }
+    init_data_file_ << "*****************" << std::endl;
+  }
+  SendCommand(pdo_start_obj, 1);
+  delete pdo_start_obj;
 }
 
 bool DriverController::DriverEnable() {
@@ -154,6 +180,10 @@ bool DriverController::DriverStart() {
       }
       break;
     }
+    default: {
+      std::cout << "Incorrect mode number of walking" << std::endl;
+      return false;
+    }
   }
   SendCommand(walk_cmd_obj, walk_id_num_);
 
@@ -199,31 +229,37 @@ bool DriverController::DriverStart() {
       }
       break;
     }
+    default: {
+      std::cout << "Incorrect mode number of steering" << std::endl;
+      return false;
+    }
   }
   SendCommand(steer_cmd_obj, steer_id_num_);
 
   if (if_debug_) {
     for (size_t i = 0; i < walk_id_num_; i++) {
       init_data_file_ << "enable and set mode commands -> ";
-      init_data_file_ << "data len : " << walk_cmd_obj[i].DataLen << " ";
+      init_data_file_ << "data len : " << (int)walk_cmd_obj[i].DataLen << " ";
       init_data_file_ << std::hex << "id is 0x" << walk_cmd_obj[i].ID << " : ";
-      init_data_file_ << std::hex << "0x" << walk_cmd_obj[i].Data[0] << "  0x"
-                      << walk_cmd_obj[i].Data[1] << "  0x"
-                      << walk_cmd_obj[i].Data[2] << std::endl;
+      init_data_file_ << std::hex << "0x" << (int)walk_cmd_obj[i].Data[0] << "  0x"
+                      << (int)walk_cmd_obj[i].Data[1] << "  0x"
+                      << (int)walk_cmd_obj[i].Data[2] << std::endl;
     }
     std::cout << std::endl;
     for (size_t i = 0; i < steer_id_num_; i++) {
       init_data_file_ << "enable and set mode commands -> ";
-      init_data_file_ << "data len : " << steer_cmd_obj[i].DataLen << " ";
+      init_data_file_ << "data len : " << (int)steer_cmd_obj[i].DataLen << " ";
       init_data_file_ << std::hex << "id is 0x" << steer_cmd_obj[i].ID << " : ";
-      init_data_file_ << std::hex << "0x" << steer_cmd_obj[i].Data[0] << "  0x"
-                      << steer_cmd_obj[i].Data[1] << "  0x"
-                      << steer_cmd_obj[i].Data[2] << std::endl;
+      init_data_file_ << std::hex << "0x" << (int)steer_cmd_obj[i].Data[0] << "  0x"
+                      << (int)steer_cmd_obj[i].Data[1] << "  0x"
+                      << (int)steer_cmd_obj[i].Data[2] << std::endl;
     }
   }
 
   delete[] walk_cmd_obj;
   delete[] steer_cmd_obj;
+
+  return true;
 }
 
 void DriverController::ControlMotor(

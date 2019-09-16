@@ -3,12 +3,16 @@
 namespace mobile_base {
 
 DriverControllerROS::DriverControllerROS(ros::NodeHandle nh,
-                                         ros::NodeHandle nh_private) {
+                                         ros::NodeHandle nh_private) : DriverController() {
   ParamInit(nh_private);
   DebugData(if_debug_);
-  GetBaseAddress(base_file_address_);
 
-  CanActivate(can_config_address_);
+  GetBaseAddress(base_file_address_);
+  std::cout << "before" << std::endl;
+  CanActivate(base_file_address_ + can_config_address_);
+  std::cout << "after" << std::endl;
+
+  ReadDriverFile(driver_config_address_);
   if_initial_ = DriverInit();
 
   joint_state_pub_ =
@@ -25,7 +29,9 @@ void DriverControllerROS::ParamInit(ros::NodeHandle nh_private) {
                    std::string("motor_joint_state"));
   nh_private.param("if_debug", if_debug_, false);
   nh_private.param("can_config_address", can_config_address_,
-                   std::string("/config/kinco_can_config.yaml"));
+                   std::string("/config/kinco/can_config.yaml"));
+  nh_private.param("driver_config_address", driver_config_address_,
+  		   std::string("/config/kinco/driver_config.yaml"));
   nh_private.param(
       "base_file_address", base_file_address_,
       std::string("/home/renov_robot/renov_ws/src/renov_robot/sensor_startup"));

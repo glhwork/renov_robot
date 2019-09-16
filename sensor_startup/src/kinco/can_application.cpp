@@ -6,7 +6,8 @@ CanApplication::CanApplication() {}
 
 CanApplication::~CanApplication() {}
 
-void CanApplication::ReadFile(const std::string& file_address) {
+void CanApplication::ReadCanFile(const std::string& file_address) {
+  std::cout << file_address << std::endl;
   YAML::Node can_config = YAML::LoadFile(file_address);
 
   device_type_ = can_config["device_type"].as<int>();
@@ -16,7 +17,7 @@ void CanApplication::ReadFile(const std::string& file_address) {
 }
 
 void CanApplication::CanActivate(const std::string& file_address) {
-  ReadFile(file_address);
+  ReadCanFile(file_address);
 
   int open_state = VCI_OpenDevice(device_type_, device_index_, 0);
   CanDiagnostic("open can device", open_state);

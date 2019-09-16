@@ -16,6 +16,7 @@ class DriverControllerROS : public DriverController {
   bool if_debug_;
   bool if_initial_;
   std::string can_config_address_;
+  std::string driver_config_address_;
   std::string base_file_address_;
   std::string joint_state_pub_topic_;
 
