@@ -2,6 +2,7 @@
 #define DRIVER_READER_H
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -13,16 +14,16 @@ typedef unsigned char u_char;
 
 namespace mobile_base {
 
-class DriverReader : public CanApplication {
+class DriverController : public CanApplication {
  public:
-  DriverReader();
-  virtual ~DriverReader();
-  void ReadFile(const std::string& file_address);
+  DriverController();
+  virtual ~DriverController();
+  void ReadFile(const std::string& relative_file_address);
 
   bool DriverInit();
   void StartPDO();
   bool DriverEnable();
-  bool DriverSetMode();
+  bool DriverStart();
 
   void ControlMotor(const std::vector<int>& control_signal);
   std::vector<int> ControlSignalTransform(const std::vector<int>& raw_signal);
@@ -35,6 +36,8 @@ class DriverReader : public CanApplication {
   void DataInitial(u_char* data, uint8_t* cmd, const uint& cmd_len);
   void Dec2HexVector(u_char* data_vec, const int& dec_value);
   int FourByteHex2Int(uint8_t* data_vec, const int& data_vec_len);
+  void DebugData(const bool& if_debug_flag);
+  void GetBaseAddress(const std::string& base_file_address);
 
  protected:
   /* PARAMETERS READ FROM YAML FILE */
@@ -59,8 +62,11 @@ class DriverReader : public CanApplication {
   CanCommand can_cmd_;
   int* home_position_;
   bool if_steer_home_;
+  bool if_debug_;
+  std::ofstream init_data_file_;
+  std::string base_file_address_;
 
-};  // class DriverReader
+};  // class DriverController
 
 }  // namespace mobile_base
 

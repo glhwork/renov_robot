@@ -1,23 +1,27 @@
 #include "ros/ros.h"
 #include "sensor_msgs/JointState.h"
 
-#include "driver_reader.h"
+#include "driver_controller.h"
 
 namespace mobile_base {
 
-class DriverReaderROS : public DriverReader {
+class DriverControllerROS : public DriverController {
  public:
-  DriverReaderROS(ros::NodeHandle nh, ros::NodeHandle nh_private);
-  virtual ~DriverReaderROS();
+  DriverControllerROS(ros::NodeHandle nh, ros::NodeHandle nh_private);
+  virtual ~DriverControllerROS();
   void ParamInit(ros::NodeHandle nh_private);
   void GetControlSignalCallback(const sensor_msgs::JointState& js_msg);
 
  private:
+  bool if_debug_;
+  bool if_initial_;
+  std::string can_config_address_;
+  std::string base_file_address_;
   std::string joint_state_pub_topic_;
 
   ros::Subscriber control_signal_sub_;
   ros::Publisher joint_state_pub_;
 
-};  // class DriverReaderROS
+};  // class DriverControllerROS
 
 }  // namespace mobile_base
