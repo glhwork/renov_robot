@@ -34,7 +34,7 @@ class DriverController : public CanApplication {
   void DriverDiagnostic();
 
   void DataInitial(u_char* data, uint8_t* cmd, const uint& cmd_len);
-  void Dec2HexVector(u_char* data_vec, const int& dec_value);
+  void Dec2HexVector(u_char* data_vec, const int& dec_value, const int& len);
   int FourByteHex2Int(uint8_t* data_vec, const int& data_vec_len);
   void DebugData(const bool& if_debug_flag);
   void GetBaseAddress(const std::string& base_file_address);

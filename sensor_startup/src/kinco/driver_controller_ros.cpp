@@ -15,7 +15,7 @@ DriverControllerROS::DriverControllerROS(ros::NodeHandle nh,
       nh.advertise<sensor_msgs::JointState>(joint_state_pub_topic_, 100);
 
   control_signal_sub_ = nh.subscribe(
-      "cmd_vel_base", 10, DriverControllerROS::GetControlSignalCallback, this);
+      "cmd_vel_base", 10, &DriverControllerROS::GetControlSignalCallback, this);
 }
 
 DriverControllerROS::~DriverControllerROS() {}

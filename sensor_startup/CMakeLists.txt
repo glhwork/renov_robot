@@ -30,6 +30,9 @@ link_directories(lib)
 add_library(sensor_reader
   src/imu_reader.cpp
   src/motor_reader.cpp
+  src/kinco/can_application.cpp
+  src/kinco/driver_controller.cpp
+  src/kinco/driver_controller_ros.cpp
 )
 target_link_libraries(sensor_reader
   yaml-cpp
@@ -78,3 +81,6 @@ target_link_libraries(remote_control
 
 add_executable(send_teleop_signal src/send_teleop_signal.cpp)
 target_link_libraries(send_teleop_signal yaml-cpp ${catkin_LIBRARIES})
+
+add_executable(driver_controller_ros_node src/kinco/driver_controller_ros_node.cpp)
+target_link_libraries(driver_controller_ros_node sensor_reader yaml-cpp ${catkin_LIBRARIES})

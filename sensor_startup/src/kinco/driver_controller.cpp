@@ -330,8 +330,8 @@ void DriverController::SendVelocity(uint* id, int* target_velocity,
   uint velocity_cmd_len = 8;
   for (size_t i = 0; i < len; i++) {
     velocity_cmd_obj[i].ID += cob_id_[i];
-    Dec2HexVector(&velocity_cmd_obj[i].Data[0], target_velocity[i]);
-    Dec2HexVector(&velocity_cmd_obj[i].Data[4], 0);
+    Dec2HexVector(&velocity_cmd_obj[i].Data[0], target_velocity[i], 4);
+    Dec2HexVector(&velocity_cmd_obj[i].Data[4], 0, 4);
     velocity_cmd_obj[i].DataLen = velocity_cmd_len;
   }
 
@@ -348,8 +348,8 @@ void DriverController::SendPosition(uint* id, int* target_position,
     position_cmd_obj[i].ID += cob_id_[i];
     DataInitial(position_cmd_obj[i].Data, can_cmd_.POSITION_COMMAND,
                 position_cmd_len);
-    Dec2HexVector(&position_cmd_obj[i].Data[0], 0);
-    Dec2HexVector(&position_cmd_obj[i].Data[4], target_position[i]);
+    Dec2HexVector(&position_cmd_obj[i].Data[0], 0, 4);
+    Dec2HexVector(&position_cmd_obj[i].Data[4], target_position[i], 4);
     position_cmd_obj[i].DataLen = position_cmd_len;
   }
 
@@ -367,7 +367,7 @@ void DriverController::SendCurrent(uint* id, int* target_current,
     current_cmd_obj[i].ID += cob_id_[i];
     DataInitial(current_cmd_obj[i].Data, can_cmd_.CURRENT_COMMAND,
                 current_cmd_len);
-    Dec2HexVector(&current_cmd_obj[i].Data[4], target_current[i]);
+    Dec2HexVector(&current_cmd_obj[i].Data[4], target_current[i], 2);
     current_cmd_obj[i].DataLen = current_cmd_len;
   }
 
@@ -382,8 +382,9 @@ void DriverController::GetHomePosition(int* home_signal, const int& len) {
   if_steer_home_ = true;
 }
 
-void DriverController::Dec2HexVector(u_char* data_vec, const int& dec_value) {
-  for (size_t i = 0; i < 4; i++) {
+void DriverController::Dec2HexVector(u_char* data_vec, const int& dec_value,
+                                     const int& len) {
+  for (size_t i = 0; i < len; i++) {
     data_vec[i] = (((int)dec_value >> (i * 8)) & 0xff);
   }
 }
