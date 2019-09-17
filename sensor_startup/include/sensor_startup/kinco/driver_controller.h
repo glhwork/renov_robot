@@ -64,6 +64,8 @@ class DriverController : public CanApplication {
   bool if_steer_home_;
   bool if_debug_;
   std::ofstream init_data_file_;
+  std::ofstream signal_data_file_;
+  std::ofstream cmd_data_file_;
   std::string base_file_address_;
 
 };  // class DriverController

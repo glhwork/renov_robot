@@ -271,7 +271,30 @@ void DriverController::ControlMotor(
 
   std::vector<int> control_signal = ControlSignalTransform(raw_control_signal);
 
+  if (if_debug_) {
+    signal_data_file_.open(base_file_address_ + "/debug_data/signal_data.txt");
+
+    signal_data_file_ << "raw_control_signal : [";
+    for (size_t i = 0; i < raw_control_sinal.size(); i++) {
+      signal_data_file_ << std::dec << raw_control_signal << "  ";
+    }
+    signal_data_file_ << "]" << std::endl;
+
+    signal_data_file_ << "control_signal : [";
+    for (size_t i = 0; i < control_sinal.size(); i++) {
+      signal_data_file_ << std::dec << control_signal << "  ";
+    }
+    signal_data_file_ << "]" << std::endl;
+
+    signal_data_file_ << "****************" << std::endl;
+    signal_data_file_.close();
+  }
+
   // send control signal to walking motors
+
+  if (if_debug_) {
+    cmd_data_file_.open(base_file_address_ + "/debug_data/cmd_data.txt");
+  }
   switch (walking_mode_) {
     case VELOCITY_MODE: {
       int* target_velocity = new int[walk_id_num_];
@@ -303,7 +326,7 @@ void DriverController::ControlMotor(
       delete[] target_current;
       break;
     }
-  }
+  }  // end of sending signals to walking motors
 
   // send control signal to steering motors
   switch (steering_mode_) {
@@ -337,6 +360,10 @@ void DriverController::ControlMotor(
       delete[] target_current;
       break;
     }
+  }  // end of sending signals to steering motors
+
+  if (if_debug_) {
+    cmd_data_file_.close();
   }
 }
 
@@ -365,10 +392,23 @@ void DriverController::SendVelocity(uint* id, int* target_velocity,
 
   uint velocity_cmd_len = 8;
   for (size_t i = 0; i < len; i++) {
-    velocity_cmd_obj[i].ID += cob_id_[i];
+    velocity_cmd_obj[i].ID += id[i];
     Dec2HexVector(&velocity_cmd_obj[i].Data[0], target_velocity[i], 4);
     Dec2HexVector(&velocity_cmd_obj[i].Data[4], 0, 4);
     velocity_cmd_obj[i].DataLen = velocity_cmd_len;
+  }
+
+  if (if_debug_) {
+    for (size_t i = 0; i < len; i++) {
+      cmd_data_file_ << "velocity -> ";
+      cmd_data_file_ << std::hex << "id = 0x" << velocity_cmd_obj[i].ID << ", ";
+      cmd_data_file_ << std::dec << "datalen = " << (int)velocity_cmd_obj[i].DataLen << " : ";
+      for (size_t j = 0; j < 8; j++) {
+        cmd_data_file_ << std::hex << "0x" << (int)velocity_cmd_obj[i].Data[j] << "  ";
+      }
+      cmd_data_file_ << std::endl;
+    }
+    cmd_data_file_ << "**************" << std::endl;
   }
 
   SendCommand(velocity_cmd_obj, len);
@@ -381,12 +421,25 @@ void DriverController::SendPosition(uint* id, int* target_position,
 
   uint position_cmd_len = 8;
   for (size_t i = 0; i < len; i++) {
-    position_cmd_obj[i].ID += cob_id_[i];
+    position_cmd_obj[i].ID += id_[i];
     DataInitial(position_cmd_obj[i].Data, can_cmd_.POSITION_COMMAND,
                 position_cmd_len);
     Dec2HexVector(&position_cmd_obj[i].Data[0], 0, 4);
     Dec2HexVector(&position_cmd_obj[i].Data[4], target_position[i], 4);
     position_cmd_obj[i].DataLen = position_cmd_len;
+  }
+
+  if (if_debug_) {
+    for (size_t i = 0; i < len; i++) {
+      cmd_data_file_ << "position -> ";
+      cmd_data_file_ << std::hex << "id = 0x" << position_cmd_obj[i].ID << ", ";
+      cmd_data_file_ << std::dec << "datalen = " << (int)position_cmd_obj[i].DataLen << " : ";
+      for (size_t j = 0; j < 8; j++) {
+        cmd_data_file_ << std::hex << "0x" << (int)position_cmd_obj[i].Data[j] << "  ";
+      }
+      cmd_data_file_ << std::endl;
+    }
+    cmd_data_file_ << "**************" << std::endl;
   }
 
   SendCommand(position_cmd_obj, len);
