@@ -37,6 +37,8 @@ struct CanCommand {
   _u8 VELOCITY_COMMAND[1] = {1}; 
   _u8 POSITION_COMMAND[1] = {1}; 
   _u8 CURRENT_COMMAND[1] = {1}; 
+
+  _u8 SET_TRAPEZOID_VELOCITY[8] = {0x81, 0x60, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00};
 };  // struct CanCommand
 
 }  // namespace mobile_base

@@ -1,5 +1,6 @@
 #include "sensor_startup/kinco/driver_controller.h"
 #include <unistd.h>
+#include <bitset>
 
 namespace mobile_base {
 
@@ -19,10 +20,8 @@ void DriverController::ReadDriverFile(
               << std::endl;
   }
   YAML::Node driver_config = YAML::LoadFile(final_file_address);
-  std::cout << "read yaml driver file" << std::endl;
 
   walking_mode_ = driver_config["walking_mode"].as<int>();
-  std::cout << "get mode " << std::endl;
   steering_mode_ = driver_config["steering_mode"].as<int>();
 
   encoder_s_ = driver_config["encoder_s"].as<int>();
@@ -37,7 +36,6 @@ void DriverController::ReadDriverFile(
   id_num_ = walk_id_num_ + steer_id_num_;
 
   home_position_ = new int[steer_id_num_];
-  std::cout << "before id " << std::endl;
 
   cob_id_ = new uint[id_num_];
   for (size_t i = 0; i < id_num_; i++) {
@@ -54,7 +52,7 @@ bool DriverController::DriverInit() {
   if (if_debug_) {
     while (true) {
       init_data_file_.open(base_file_address_ +
-                           "/debug_data/driver_init_data.txt");
+                           "/debug_data/driver_init_data.txt", std::ios::app);
       if (init_data_file_.is_open()) {
         break;
       } else {
@@ -67,11 +65,15 @@ bool DriverController::DriverInit() {
 
   if (!DriverStart()) {
     std::cout << "Error!! The drivers starts with failure" << std::endl;
+    return false;
   }
 
   GetHomePosition();
 
+  DriverPreset();
+
   if (if_debug_) {
+    std::cout << "home finish" << std::endl;
     init_data_file_.close();
   }
 
@@ -259,10 +261,29 @@ bool DriverController::DriverStart() {
     }
   }
 
-  delete[] walk_cmd_obj;
+  //delete[] walk_cmd_obj;
   delete[] steer_cmd_obj;
 
   return true;
+}
+
+void DriverController::DriverPreset() {
+  PVCI_CAN_OBJ preset_obj = GetVciObject(steer_id_num_, RPDO2_ID);
+  for (size_t i = 0; i < steer_id_num_; i++) {
+    preset_obj[i].ID += cob_id_[i + walk_id_num_];
+    preset_obj[i].DataLen = 4;
+    Dec2HexVector(&preset_obj[i].Data[0], 1000 * 512 * frequency_multiplier_ * encoder_s_/1875, 4);
+    Dec2HexVector(&preset_obj[i].Data[4], 0, 4);
+  }
+  for (size_t j = 0; j < steer_id_num_; j++) {
+    std::cout << std::hex << "id is 0x" << (int)preset_obj[j].ID << " : ";
+    for (size_t i = 0; i < 8; i++) {
+      std::cout << std::hex << "0x" << (int)preset_obj[j].Data[i] << "  ";
+    }
+    std::cout << std::endl;
+  }
+  SendCommand(preset_obj, steer_id_num_);
+  delete[] preset_obj;
 }
 
 void DriverController::ControlMotor(
@@ -302,7 +323,7 @@ void DriverController::ControlMotor(
     case VELOCITY_MODE: {
       int* target_velocity = new int[walk_id_num_];
       for (size_t i = 0; i < walk_id_num_; i++) {
-        target_velocity[i] = raw_control_signal[i];
+        target_velocity[i] = control_signal[i];
       }
 
       SendVelocity(cob_id_, target_velocity, walk_id_num_);
@@ -312,7 +333,7 @@ void DriverController::ControlMotor(
     case POSITION_MODE: {
       int* target_position = new int[walk_id_num_];
       for (size_t i = 0; i < walk_id_num_; i++) {
-        target_position[i] = raw_control_signal[i];
+        target_position[i] = control_signal[i];
       }
 
       SendPosition(cob_id_, target_position, walk_id_num_);
@@ -322,7 +343,7 @@ void DriverController::ControlMotor(
     case CURRENT_MODE: {
       int* target_current = new int[walk_id_num_];
       for (size_t i = 0; i < walk_id_num_; i++) {
-        target_current[i] = raw_control_signal[i];
+        target_current[i] = control_signal[i];
       }
 
       SendCurrent(cob_id_, target_current, walk_id_num_);
@@ -336,30 +357,30 @@ void DriverController::ControlMotor(
     case VELOCITY_MODE: {
       int* target_velocity = new int[steer_id_num_];
       for (size_t i = walk_id_num_; i < id_num_; i++) {
-        target_velocity[i - walk_id_num_] = raw_control_signal[i];
+        target_velocity[i - walk_id_num_] = control_signal[i];
       }
 
-      SendVelocity(cob_id_, target_velocity, steer_id_num_);
+      SendVelocity(&cob_id_[walk_id_num_], target_velocity, steer_id_num_);
       delete[] target_velocity;
       break;
     }
     case POSITION_MODE: {
       int* target_position = new int[steer_id_num_];
       for (size_t i = walk_id_num_; i < id_num_; i++) {
-        target_position[i - walk_id_num_] = raw_control_signal[i];
+        target_position[i - walk_id_num_] = control_signal[i];
       }
 
-      SendPosition(cob_id_, target_position, steer_id_num_);
+      SendPosition(&cob_id_[walk_id_num_], target_position, steer_id_num_);
       delete[] target_position;
       break;
     }
     case CURRENT_MODE: {
       int* target_current = new int[steer_id_num_];
       for (size_t i = walk_id_num_; i < id_num_; i++) {
-        target_current[i - walk_id_num_] = raw_control_signal[i];
+        target_current[i - walk_id_num_] = control_signal[i];
       }
 
-      SendCurrent(cob_id_, target_current, steer_id_num_);
+      SendCurrent(&cob_id_[walk_id_num_], target_current, steer_id_num_);
       delete[] target_current;
       break;
     }
@@ -376,17 +397,18 @@ std::vector<int> DriverController::ControlSignalTransform(
   // determine the walking command
   for (size_t i = 0; i < 4; i++) {
     int tmp = raw_signal[i] * reduc_ratio_w_;
+    tmp = (tmp * 512 * encoder_w_) / 1875;
     tmp = tmp * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
   }
 
   // determine the steering command
   for (size_t i = 4; i < 8; i++) {
-    double data = raw_signal[i] * reduc_ratio_s_ * encoder_s_ *
-                  frequency_multiplier_ / (2 * M_PI);
+    double data = raw_signal[i] * reduc_ratio_s_ * encoder_s_ / (2 * M_PI);
     int tmp = home_position_[i - 4] + (int)data * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
   }
+  return signal;
 }
 
 void DriverController::SendVelocity(uint* id, int* target_velocity,
@@ -501,6 +523,7 @@ void DriverController::GetHomePosition(int* home_signal, const int& len) {
 }
 
 void DriverController::GetHomePosition() {
+  sleep(5);
   while (true) {
     FeedbackRequest();
     usleep(10000);
@@ -539,6 +562,9 @@ void DriverController::GetHomePosition() {
         continue;
       }
 
+      /* this is a trick !!!!!!!!! */
+      if_home = true;
+
       if (abs(receive_obj[i].ID - TPDO2_ID) < (id_num_ + 1)) {
         walk_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
             ByteHex2Int(&receive_obj[i].Data[0], 4);
@@ -555,6 +581,19 @@ void DriverController::GetHomePosition() {
     if (if_home && if_get_fb) {
       for (size_t i = 0; i < steer_id_num_; i++) {
         home_position_[i] = steer_fb_int[i + walk_id_num_];
+      }
+
+      if (if_debug_) {
+        std::ofstream home_file;
+        home_file.open(base_file_address_ + "/debug_data/home_position.txt", std::ios::app);
+	if (home_file.is_open()) std::cout << "open file for homing success" << std::endl;
+	home_file << "Home position : ";
+	for (size_t i = 0; i < steer_id_num_; i++) {
+	  home_file << std::dec << home_position_[i] << ", ";
+	}
+	home_file << std::endl;
+	
+	home_file.close();
       }
       if_steer_home_ = true;
       break;

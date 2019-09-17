@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 #include "sensor_msgs/JointState.h"
 
-void Send(double v_linear, double p_angular, ros::Publisher& pub) {
+sensor_msgs::JointState Send(double v_linear, double p_angular) {
   sensor_msgs::JointState js;
   js.header.frame_id = "motor";
   js.header.stamp = ros::Time::now();
@@ -30,13 +30,15 @@ void Send(double v_linear, double p_angular, ros::Publisher& pub) {
   js.velocity.resize(8);
   js.velocity = {v_linear, v_linear, v_linear, v_linear, 0, 0, 0, 0};
 
-  pub.publish(js);
+  return js;
+
 }
 
 void StatePlan(ros::Publisher& pub) {
 
   std::cout << "ready to send" << std::endl;
   sleep(3);
+
 /* 
   Send(10, M_PI/4, pub);
   ros::Duration(5).sleep();
@@ -58,8 +60,19 @@ int main(int argc, char** argv) {
       = nh.advertise<sensor_msgs::JointState>("cmd_base_joint", 100);
   
   ros::Rate r(10);
+  sensor_msgs::JointState js;
+  
+  double speed;
+  std::cin >> speed;
+  js = Send(speed, M_PI/2);
+  double pre_t = ros::Time::now().toSec();
   while (ros::ok) {
-    Send(0, M_PI/2, pub);
+    pub.publish(js);
+    double cur_t = ros::Time::now().toSec();
+    if (cur_t - pre_t > 5.0) { 
+      exit(0);
+      break;
+    }
     ros::spinOnce();
     r.sleep();
   }
