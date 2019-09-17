@@ -124,7 +124,7 @@ void DriverController::StartPDO() {
 }
 
 bool DriverController::DriverEnable() {
-  PVCI_CAN_OBJ enable_obj = GetVciObject(id_num_, TPDO1_ID);
+  PVCI_CAN_OBJ enable_obj = GetVciObject(id_num_, RPDO1_ID);
 
   uint enable_cmd_len =
       sizeof(can_cmd_.ENABLE_MOTOR) / sizeof(can_cmd_.ENABLE_MOTOR[0]);
@@ -139,7 +139,7 @@ bool DriverController::DriverEnable() {
 }
 
 bool DriverController::DriverStart() {
-  PVCI_CAN_OBJ walk_cmd_obj = GetVciObject(walk_id_num_, TPDO1_ID);
+  PVCI_CAN_OBJ walk_cmd_obj = GetVciObject(walk_id_num_, RPDO1_ID);
   switch (walking_mode_) {
     case VELOCITY_MODE: {
       uint walk_mode_len = sizeof(can_cmd_.SET_VELOCITY_MODE) /
@@ -161,8 +161,8 @@ bool DriverController::DriverStart() {
         walk_cmd_obj[i].ID += cob_id_[i];
         DataInitial(walk_cmd_obj[i].Data, can_cmd_.SET_POSITION_MODE,
                     walk_mode_len);
-        walk_cmd_obj[i].Data[1] = ENABLE_CMD;
-        walk_cmd_obj[i].Data[2] = 0x00;
+        walk_cmd_obj[i].Data[1] = 0x3f;
+        walk_cmd_obj[i].Data[2] = 0x10;
         walk_cmd_obj[i].DataLen = 2 + walk_mode_len;
       }
       break;
@@ -188,7 +188,7 @@ bool DriverController::DriverStart() {
   SendCommand(walk_cmd_obj, walk_id_num_);
 
   // set mode of steering motors
-  PVCI_CAN_OBJ steer_cmd_obj = GetVciObject(steer_id_num_, TPDO1_ID);
+  PVCI_CAN_OBJ steer_cmd_obj = GetVciObject(steer_id_num_, RPDO1_ID);
   switch (steering_mode_) {
     case VELOCITY_MODE: {
       uint steer_mode_len = sizeof(can_cmd_.SET_VELOCITY_MODE) /
@@ -210,8 +210,8 @@ bool DriverController::DriverStart() {
         steer_cmd_obj[i].ID += cob_id_[i + walk_id_num_];
         DataInitial(steer_cmd_obj[i].Data, can_cmd_.SET_POSITION_MODE,
                     steer_mode_len);
-        steer_cmd_obj[i].Data[1] = ENABLE_CMD;
-        steer_cmd_obj[i].Data[2] = 0x00;
+        steer_cmd_obj[i].Data[1] = 0x3f;
+        steer_cmd_obj[i].Data[2] = 0x10;
         steer_cmd_obj[i].DataLen = 2 + steer_mode_len;
       }
       break;
