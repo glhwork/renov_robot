@@ -10,7 +10,8 @@ DriverController::DriverController() : CanApplication() {
 
 DriverController::~DriverController() { delete[] cob_id_; }
 
-void DriverController::ReadDriverFile(const std::string& relative_file_address) {
+void DriverController::ReadDriverFile(
+    const std::string& relative_file_address) {
   std::string final_file_address = base_file_address_ + relative_file_address;
   if (if_debug_) {
     std::cout << "relative is : " << relative_file_address << std::endl;
@@ -63,11 +64,12 @@ bool DriverController::DriverInit() {
   }
 
   StartPDO();
-  sleep(2);
 
   if (!DriverStart()) {
     std::cout << "Error!! The drivers starts with failure" << std::endl;
   }
+
+  GetHomePosition();
 
   if (if_debug_) {
     init_data_file_.close();
@@ -77,32 +79,33 @@ bool DriverController::DriverInit() {
 }
 
 void DriverController::StartPDO() {
-/*
-  PVCI_CAN_OBJ pdo_start_obj = GetVciObject(id_num_, NMT_MODULE_CONTROL_ID);
+  /*
+    PVCI_CAN_OBJ pdo_start_obj = GetVciObject(id_num_, NMT_MODULE_CONTROL_ID);
 
-  uint cmd_len =
-      sizeof(can_cmd_.PDO_START_WORK) / sizeof(can_cmd_.PDO_START_WORK[0]);
-  for (size_t i = 0; i < id_num_; i++) {
-    DataInitial(pdo_start_obj[i].Data, can_cmd_.PDO_START_WORK, cmd_len);
-    pdo_start_obj[i].Data[1] = cob_id_[i];
-    // one of the byte in data should be equal to station number
-    pdo_start_obj[i].DataLen = cmd_len;
-  }
-  if (if_debug_) {
-    init_data_file_ << "*****************" << std::endl;
+    uint cmd_len =
+        sizeof(can_cmd_.PDO_START_WORK) / sizeof(can_cmd_.PDO_START_WORK[0]);
     for (size_t i = 0; i < id_num_; i++) {
-      init_data_file_ << "start pdo commands -> ";
-      init_data_file_ << "data len : " << (int)pdo_start_obj[i].DataLen << " ";
-      init_data_file_ << std::hex << "id is 0x" << pdo_start_obj[i].ID << " : ";
-      init_data_file_ << std::hex << "0x" << (int)pdo_start_obj[i].Data[0] << "  0x"
-                      << (int)pdo_start_obj[i].Data[1] << std::endl;
+      DataInitial(pdo_start_obj[i].Data, can_cmd_.PDO_START_WORK, cmd_len);
+      pdo_start_obj[i].Data[1] = cob_id_[i];
+      // one of the byte in data should be equal to station number
+      pdo_start_obj[i].DataLen = cmd_len;
     }
-    init_data_file_ << "*****************" << std::endl;
-  }
+    if (if_debug_) {
+      init_data_file_ << "*****************" << std::endl;
+      for (size_t i = 0; i < id_num_; i++) {
+        init_data_file_ << "start pdo commands -> ";
+        init_data_file_ << "data len : " << (int)pdo_start_obj[i].DataLen << "
+    "; init_data_file_ << std::hex << "id is 0x" << pdo_start_obj[i].ID << " :
+    "; init_data_file_ << std::hex << "0x" << (int)pdo_start_obj[i].Data[0] << "
+    0x"
+                        << (int)pdo_start_obj[i].Data[1] << std::endl;
+      }
+      init_data_file_ << "*****************" << std::endl;
+    }
 
-  SendCommand(pdo_start_obj, id_num_);
-  delete[] pdo_start_obj;
-  */
+    SendCommand(pdo_start_obj, id_num_);
+    delete[] pdo_start_obj;
+    */
 
   PVCI_CAN_OBJ pdo_start_obj = GetVciObject(1, NMT_MODULE_CONTROL_ID);
   pdo_start_obj->DataLen = 2;
@@ -114,8 +117,8 @@ void DriverController::StartPDO() {
       init_data_file_ << "start pdo commands -> ";
       init_data_file_ << "data len : " << (int)pdo_start_obj[i].DataLen << " ";
       init_data_file_ << std::hex << "id is 0x" << pdo_start_obj[i].ID << " : ";
-      init_data_file_ << std::hex << "0x" << (int)pdo_start_obj[i].Data[0] << "  0x"
-                      << (int)pdo_start_obj[i].Data[1] << std::endl;
+      init_data_file_ << std::hex << "0x" << (int)pdo_start_obj[i].Data[0]
+                      << "  0x" << (int)pdo_start_obj[i].Data[1] << std::endl;
     }
     init_data_file_ << "*****************" << std::endl;
   }
@@ -241,8 +244,8 @@ bool DriverController::DriverStart() {
       init_data_file_ << "enable and set mode commands -> ";
       init_data_file_ << "data len : " << (int)walk_cmd_obj[i].DataLen << " ";
       init_data_file_ << std::hex << "id is 0x" << walk_cmd_obj[i].ID << " : ";
-      init_data_file_ << std::hex << "0x" << (int)walk_cmd_obj[i].Data[0] << "  0x"
-                      << (int)walk_cmd_obj[i].Data[1] << "  0x"
+      init_data_file_ << std::hex << "0x" << (int)walk_cmd_obj[i].Data[0]
+                      << "  0x" << (int)walk_cmd_obj[i].Data[1] << "  0x"
                       << (int)walk_cmd_obj[i].Data[2] << std::endl;
     }
     std::cout << std::endl;
@@ -250,8 +253,8 @@ bool DriverController::DriverStart() {
       init_data_file_ << "enable and set mode commands -> ";
       init_data_file_ << "data len : " << (int)steer_cmd_obj[i].DataLen << " ";
       init_data_file_ << std::hex << "id is 0x" << steer_cmd_obj[i].ID << " : ";
-      init_data_file_ << std::hex << "0x" << (int)steer_cmd_obj[i].Data[0] << "  0x"
-                      << (int)steer_cmd_obj[i].Data[1] << "  0x"
+      init_data_file_ << std::hex << "0x" << (int)steer_cmd_obj[i].Data[0]
+                      << "  0x" << (int)steer_cmd_obj[i].Data[1] << "  0x"
                       << (int)steer_cmd_obj[i].Data[2] << std::endl;
     }
   }
@@ -275,14 +278,14 @@ void DriverController::ControlMotor(
     signal_data_file_.open(base_file_address_ + "/debug_data/signal_data.txt");
 
     signal_data_file_ << "raw_control_signal : [";
-    for (size_t i = 0; i < raw_control_sinal.size(); i++) {
-      signal_data_file_ << std::dec << raw_control_signal << "  ";
+    for (size_t i = 0; i < raw_control_signal.size(); i++) {
+      signal_data_file_ << std::dec << raw_control_signal[i] << "  ";
     }
     signal_data_file_ << "]" << std::endl;
 
     signal_data_file_ << "control_signal : [";
-    for (size_t i = 0; i < control_sinal.size(); i++) {
-      signal_data_file_ << std::dec << control_signal << "  ";
+    for (size_t i = 0; i < control_signal.size(); i++) {
+      signal_data_file_ << std::dec << control_signal[i] << "  ";
     }
     signal_data_file_ << "]" << std::endl;
 
@@ -402,9 +405,12 @@ void DriverController::SendVelocity(uint* id, int* target_velocity,
     for (size_t i = 0; i < len; i++) {
       cmd_data_file_ << "velocity -> ";
       cmd_data_file_ << std::hex << "id = 0x" << velocity_cmd_obj[i].ID << ", ";
-      cmd_data_file_ << std::dec << "datalen = " << (int)velocity_cmd_obj[i].DataLen << " : ";
+      cmd_data_file_ << std::dec
+                     << "datalen = " << (int)velocity_cmd_obj[i].DataLen
+                     << " : ";
       for (size_t j = 0; j < 8; j++) {
-        cmd_data_file_ << std::hex << "0x" << (int)velocity_cmd_obj[i].Data[j] << "  ";
+        cmd_data_file_ << std::hex << "0x" << (int)velocity_cmd_obj[i].Data[j]
+                       << "  ";
       }
       cmd_data_file_ << std::endl;
     }
@@ -421,7 +427,7 @@ void DriverController::SendPosition(uint* id, int* target_position,
 
   uint position_cmd_len = 8;
   for (size_t i = 0; i < len; i++) {
-    position_cmd_obj[i].ID += id_[i];
+    position_cmd_obj[i].ID += id[i];
     DataInitial(position_cmd_obj[i].Data, can_cmd_.POSITION_COMMAND,
                 position_cmd_len);
     Dec2HexVector(&position_cmd_obj[i].Data[0], 0, 4);
@@ -433,9 +439,12 @@ void DriverController::SendPosition(uint* id, int* target_position,
     for (size_t i = 0; i < len; i++) {
       cmd_data_file_ << "position -> ";
       cmd_data_file_ << std::hex << "id = 0x" << position_cmd_obj[i].ID << ", ";
-      cmd_data_file_ << std::dec << "datalen = " << (int)position_cmd_obj[i].DataLen << " : ";
+      cmd_data_file_ << std::dec
+                     << "datalen = " << (int)position_cmd_obj[i].DataLen
+                     << " : ";
       for (size_t j = 0; j < 8; j++) {
-        cmd_data_file_ << std::hex << "0x" << (int)position_cmd_obj[i].Data[j] << "  ";
+        cmd_data_file_ << std::hex << "0x" << (int)position_cmd_obj[i].Data[j]
+                       << "  ";
       }
       cmd_data_file_ << std::endl;
     }
@@ -464,11 +473,121 @@ void DriverController::SendCurrent(uint* id, int* target_current,
   delete[] current_cmd_obj;
 }
 
+void DriverController::FeedbackRequest() {
+  PVCI_CAN_OBJ req_obj = GetVciObject(1, SYNC_ID);
+  req_obj->DataLen = 0;
+
+  if (if_debug_) {
+    req_data_file_.open(base_file_address_ + "/debug_data/req_data.txt",
+                        std::ios::app);
+
+    req_data_file_ << "request cmd -> ";
+    req_data_file_ << std::hex << "id is : 0x" << req_obj->ID << "  ";
+    req_data_file_ << std::dec << "len is : " << (int)req_obj->DataLen;
+    req_data_file_ << std::endl;
+
+    req_data_file_.close();
+  }
+
+  SendCommand(req_obj, 1);
+  delete req_obj;
+}
+
 void DriverController::GetHomePosition(int* home_signal, const int& len) {
   for (size_t i = 0; i < len; i++) {
     home_position_[i] = home_signal[i];
   }
   if_steer_home_ = true;
+}
+
+void DriverController::GetHomePosition() {
+  while (true) {
+    FeedbackRequest();
+    usleep(10000);
+
+    int receive_obj_len = 2000;
+    PVCI_CAN_OBJ receive_obj = new VCI_CAN_OBJ[receive_obj_len];
+    GetData(receive_obj, receive_obj_len);
+
+    std::vector<int> walk_fb_int;
+    std::vector<int> steer_fb_int;
+    walk_fb_int.resize(id_num_);
+    steer_fb_int.resize(id_num_);
+
+    int state_word;
+    bool if_home;
+    bool if_get_fb = true;
+    bool get_fb_flag[id_num_];
+    for (size_t i = 0; i < id_num_; i++) {
+      get_fb_flag[i] = false;
+    }
+    for (size_t i = 0; i < receive_obj_len; i++) {
+      bool if_get_state_word = false;
+      for (size_t j = walk_id_num_; j < id_num_; j++) {
+        if (cob_id_[j] + TPDO1_ID == receive_obj[i].ID) {
+          if_get_state_word = true;
+          break;
+        }
+      }
+      if (if_get_state_word) {
+        state_word = ByteHex2Int(&receive_obj[i].Data[1], 2);
+        if (((state_word >> 15) & 0x01) == 1) {
+          if_home = true;
+        } else {
+          if_home = false;
+        }
+        continue;
+      }
+
+      if (abs(receive_obj[i].ID - TPDO2_ID) < (id_num_ + 1)) {
+        walk_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
+            ByteHex2Int(&receive_obj[i].Data[0], 4);
+        steer_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
+            ByteHex2Int(&receive_obj[i].Data[4], 4);
+        get_fb_flag[receive_obj[i].ID - TPDO2_ID - 1] = true;
+      }
+    }
+    delete[] receive_obj;
+
+    for (size_t i = 0; i < id_num_; i++) {
+      if_get_fb = if_get_fb && get_fb_flag[i];
+    }
+    if (if_home && if_get_fb) {
+      for (size_t i = 0; i < steer_id_num_; i++) {
+        home_position_[i] = steer_fb_int[i + walk_id_num_];
+      }
+      if_steer_home_ = true;
+      break;
+    }
+  }
+}
+
+void DriverController::GetFeedback(double* walk_fb, double* steer_fb) {
+  FeedbackRequest();
+  usleep(10000);
+
+  int receive_obj_len = 2000;
+  PVCI_CAN_OBJ receive_obj = new VCI_CAN_OBJ[receive_obj_len];
+  GetData(receive_obj, receive_obj_len);
+
+  int* walk_fb_int = new int[id_num_];
+  int* steer_fb_int = new int[id_num_];
+  for (size_t i = 0; i < receive_obj_len; i++) {
+    if (abs(receive_obj[i].ID - TPDO2_ID) < (id_num_ + 1)) {
+      walk_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
+          ByteHex2Int(&receive_obj[i].Data[0], 4);
+      steer_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
+          ByteHex2Int(&receive_obj[i].Data[4], 4);
+    }
+  }
+  for (size_t i = 0; i < id_num_; i++) {
+    walk_fb[i] = (double)walk_fb_int[i] / reduc_ratio_w_;
+    // steer_fb[i] =
+  }
+
+  delete[] walk_fb_int;
+  delete[] steer_fb_int;
+  delete[] receive_obj;
 }
 
 void DriverController::Dec2HexVector(u_char* data_vec, const int& dec_value,
@@ -477,8 +596,18 @@ void DriverController::Dec2HexVector(u_char* data_vec, const int& dec_value,
     data_vec[i] = (((int)dec_value >> (i * 8)) & 0xff);
   }
 }
-int DriverController::FourByteHex2Int(uint8_t* data_vec,
-                                      const int& data_vec_len) {}
+int DriverController::ByteHex2Int(uint8_t* data_vec, const int& data_vec_len) {
+  int result = 0;
+  int sign_judger = 0x80;
+  sign_judger = sign_judger << ((data_vec_len - 1) * 8);
+
+  for (size_t i = 0; i < data_vec_len; i++) {
+    result += (data_vec[i] << (i * 8));
+  }
+  if (sign_judger && result) {
+    result = -1 * (~(result - 1));
+  }
+}
 
 void DriverController::DataInitial(u_char* data, uint8_t* cmd,
                                    const uint& cmd_len) {

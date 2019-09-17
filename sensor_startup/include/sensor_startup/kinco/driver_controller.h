@@ -30,12 +30,15 @@ class DriverController : public CanApplication {
   void SendVelocity(uint* id, int* target_velocity, const int& len);
   void SendPosition(uint* id, int* target_position, const int& len);
   void SendCurrent(uint* id, int* target_current, const int& len);
+  void FeedbackRequest();
   void GetHomePosition(int* home_signal, const int& len);
+  void GetHomePosition();
+  void GetFeedback(double* walk_fb, double* steer_fb);
   void DriverDiagnostic();
 
   void DataInitial(u_char* data, uint8_t* cmd, const uint& cmd_len);
   void Dec2HexVector(u_char* data_vec, const int& dec_value, const int& len);
-  int FourByteHex2Int(uint8_t* data_vec, const int& data_vec_len);
+  int ByteHex2Int(uint8_t* data_vec, const int& data_vec_len);
   void DebugData(const bool& if_debug_flag);
   void GetBaseAddress(const std::string& base_file_address);
 
@@ -66,6 +69,7 @@ class DriverController : public CanApplication {
   std::ofstream init_data_file_;
   std::ofstream signal_data_file_;
   std::ofstream cmd_data_file_;
+  std::ofstream req_data_file_;
   std::string base_file_address_;
 
 };  // class DriverController

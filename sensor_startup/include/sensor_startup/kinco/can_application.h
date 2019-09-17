@@ -22,6 +22,7 @@ class CanApplication {
   void CanActivate(const std::string& file_address);
   PVCI_CAN_OBJ GetVciObject(const int& obj_num, const uint& initial_id);
   void SendCommand(PVCI_CAN_OBJ obj, const uint& len);
+  void GetData(PVCI_CAN_OBJ obj, const int& obj_len);
 
  private:
   void CanDiagnostic(const std::string& description, const int& state);
@@ -29,6 +30,8 @@ class CanApplication {
   int device_type_;
   int device_index_;
   int can_index_;
+  int wait_time_;
+
   int frame_len_;
 };  // class CanApplication
 

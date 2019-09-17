@@ -13,6 +13,7 @@ void CanApplication::ReadCanFile(const std::string& file_address) {
   device_type_ = can_config["device_type"].as<int>();
   device_index_ = can_config["device_index"].as<int>();
   can_index_ = can_config["can_index"].as<int>();
+  wait_time_ = can_config["wait_time"].as<int>();
   frame_len_ = can_config["frame_len"].as<int>();
 }
 
@@ -79,4 +80,16 @@ void CanApplication::SendCommand(PVCI_CAN_OBJ obj, const uint& obj_len) {
   for (size_t i = 0; i < obj_len; i++) {
     VCI_Transmit(device_type_, device_index_, can_index_, obj, frame_len_);
   }
+}
+
+void CanApplication::GetData(PVCI_CAN_OBJ obj, const int& obj_len) {
+  int data_num = VCI_GetReceiveNum(device_type_, device_index_, can_index_);
+  if (-1 == data_num) {
+    std::cout << "Get data number failure!" << std::endl;
+  } else if (0 == data_num) {
+    std::cout << "No data in the buffer" << std::endl;
+  }
+
+  int receive_num = VCI_Receive(device_type_, device_index_, can_index_, obj,
+                                obj_len, wait_time_);
 }
