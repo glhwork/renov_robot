@@ -23,12 +23,12 @@ class DriverController : public CanApplication {
   bool DriverInit();
   void StartPDO();
   bool DriverEnable();
-  void DriverPreset();
+  void SteerParamPreset();
   bool DriverStart();
   void DriverStop();
 
-  void ControlMotor(const std::vector<int>& control_signal);
-  std::vector<int> ControlSignalTransform(const std::vector<int>& raw_signal);
+  void ControlMotor(const std::vector<double>& control_signal);
+  std::vector<double> ControlSignalTransform(const std::vector<double>& raw_signal);
   void SendVelocity(uint* id, int* target_velocity, const int& len);
   void SendPosition(uint* id, int* target_position, const int& len);
   void SendCurrent(uint* id, int* target_current, const int& len);
@@ -59,7 +59,7 @@ class DriverController : public CanApplication {
   int frequency_multiplier_;
   double reduc_ratio_s_;
   double reduc_ratio_w_;
-  int max_velocity_;
+  int trapezoid_velocity_;
   uint* cob_id_;
   int* motor_sign_;
 

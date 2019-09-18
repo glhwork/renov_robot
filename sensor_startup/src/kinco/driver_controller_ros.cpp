@@ -21,6 +21,9 @@ DriverControllerROS::DriverControllerROS(ros::NodeHandle nh,
 
   control_signal_sub_ = nh.subscribe(
       "cmd_vel_base", 10, &DriverControllerROS::GetControlSignalCallback, this);
+
+  stop_signal_sub_ = nh.subscribe(
+      "stop_driver", 10, &DriverControllerROS::DriverStopCallback, this);
 }
 
 DriverControllerROS::~DriverControllerROS() {}
@@ -44,12 +47,12 @@ void DriverControllerROS::GetControlSignalCallback(
     ROS_WARN("The driver controller is waiting for initialization");
     return;
   }
-  if (js_msg.name.size() < id_num_) {
+  if (js_msg.name.size() != id_num_) {
     ROS_WARN("Incorrect number of joint states");
     return;
   }
 
-  std::vector<int> control_singal;
+  std::vector<double> control_singal;
   for (size_t i = 0; i < walk_id_num_; i++) {
     control_singal.push_back(js_msg.velocity[i]);
   }

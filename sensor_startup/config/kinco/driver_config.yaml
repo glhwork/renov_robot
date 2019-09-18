@@ -9,7 +9,11 @@ encoder_w: 2500  # encoder line of walking motor
 frequency_multiplier: 4 
 reduc_ratio_s: 220  # reduction ratio of steering motor
 reduc_ratio_w: 20.15  # reduction ratio of walking motor
-max_velocity: 1500  
+
+# velocity applied while the driver is in position mode, 
+# the value corresponds to the actual value of wheels
+# uint -> rad/s
+trapezoid_velocity: 0.175    
 
 walk_id_num: 4
 steer_id_num: 4

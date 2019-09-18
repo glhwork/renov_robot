@@ -28,7 +28,7 @@ void DriverController::ReadDriverFile(
   frequency_multiplier_ = driver_config["frequency_multiplier"].as<int>();
   reduc_ratio_s_ = driver_config["reduc_ratio_s"].as<double>();
   reduc_ratio_w_ = driver_config["reduc_ratio_w"].as<double>();
-  max_velocity_ = driver_config["max_velocity"].as<int>();
+  trapezoid_velocity_ = driver_config["trapezoid_velocity"].as<int>();
 
   walk_id_num_ = driver_config["walk_id_num"].as<int>();
   steer_id_num_ = driver_config["steer_id_num"].as<int>();
@@ -65,7 +65,7 @@ bool DriverController::DriverInit() {
 
   GetHomePosition();
 
-  DriverPreset();
+  SteerParamPreset();
 
   if (if_debug_) {
     std::cout << "home finish" << std::endl;
@@ -262,13 +262,15 @@ bool DriverController::DriverStart() {
   return true;
 }
 
-void DriverController::DriverPreset() {
+void DriverController::SteerParamPreset() {
   PVCI_CAN_OBJ preset_obj = GetVciObject(steer_id_num_, RPDO2_ID);
+
+  double trap_velo = trapezoid_velocity_ * 60 / (2 * M_PI) * reduc_ratio_s_ *
+                     512 * frequency_multiplier_ * encoder_s_ / 1875;
   for (size_t i = 0; i < steer_id_num_; i++) {
     preset_obj[i].ID += cob_id_[i + walk_id_num_];
     preset_obj[i].DataLen = 4;
-    Dec2HexVector(&preset_obj[i].Data[0],
-                  1000 * 512 * frequency_multiplier_ * encoder_s_ / 1875, 4);
+    Dec2HexVector(&preset_obj[i].Data[0], (int)trap_velo, 4);
     Dec2HexVector(&preset_obj[i].Data[4], 0, 4);
   }
   for (size_t j = 0; j < steer_id_num_; j++) {
@@ -295,13 +297,14 @@ void DriverController::DriverStop() {
 }
 
 void DriverController::ControlMotor(
-    const std::vector<int>& raw_control_signal) {
+    const std::vector<double>& raw_control_signal) {
   if (raw_control_signal.size() != id_num_) {
     std::cout << "Quantity of control signal is incorrect" << std::endl;
     return;
   }
 
-  std::vector<int> control_signal = ControlSignalTransform(raw_control_signal);
+  std::vector<double> control_signal =
+      ControlSignalTransform(raw_control_signal);
 
   if (if_debug_) {
     signal_data_file_.open(base_file_address_ + "/debug_data/signal_data.txt");
@@ -399,21 +402,23 @@ void DriverController::ControlMotor(
   }
 }
 
-std::vector<int> DriverController::ControlSignalTransform(
-    const std::vector<int>& raw_signal) {
-  std::vector<int> signal;
+std::vector<double> DriverController::ControlSignalTransform(
+    const std::vector<double>& raw_signal) {
+  std::vector<double> signal;
+
   // determine the walking command
-  for (size_t i = 0; i < 4; i++) {
+  for (size_t i = 0; i < walk_id_num_; i++) {
     int tmp = raw_signal[i] * reduc_ratio_w_;
-    tmp = (tmp * 512 * encoder_w_) / 1875;
+    tmp = (tmp * 512 * frequency_multiplier_ * encoder_w_) / 1875;
     tmp = tmp * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
   }
 
   // determine the steering command
-  for (size_t i = 4; i < 8; i++) {
-    double data = raw_signal[i] * reduc_ratio_s_ * encoder_s_ / (2 * M_PI);
-    int tmp = home_position_[i - 4] + (int)data * pow(-1, motor_sign_[i] + 1);
+  for (size_t i = walk_id_num_; i < id_num_; i++) {
+    double delta = raw_signal[i] * reduc_ratio_s_ * encoder_s_ / (2 * M_PI);
+    int tmp = home_position_[i - walk_id_num_] +
+              (int)delta * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
   }
   return signal;
