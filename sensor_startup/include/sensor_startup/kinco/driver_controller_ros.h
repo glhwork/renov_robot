@@ -1,4 +1,5 @@
 #include "ros/ros.h"
+#include "std_msgs/Bool.h"
 #include "sensor_msgs/JointState.h"
 
 #include "driver_controller.h"
@@ -11,6 +12,7 @@ class DriverControllerROS : public DriverController {
   virtual ~DriverControllerROS();
   void ParamInit(ros::NodeHandle nh_private);
   void GetControlSignalCallback(const sensor_msgs::JointState& js_msg);
+  void DriverStopCallback(const std_msgs::Bool& stop_signal);
 
  private:
   bool if_debug_;

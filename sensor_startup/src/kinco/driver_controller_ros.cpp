@@ -3,7 +3,8 @@
 namespace mobile_base {
 
 DriverControllerROS::DriverControllerROS(ros::NodeHandle nh,
-                                         ros::NodeHandle nh_private) : DriverController() {
+                                         ros::NodeHandle nh_private)
+    : DriverController() {
   ParamInit(nh_private);
   DebugData(if_debug_);
 
@@ -31,7 +32,7 @@ void DriverControllerROS::ParamInit(ros::NodeHandle nh_private) {
   nh_private.param("can_config_address", can_config_address_,
                    std::string("/config/kinco/can_config.yaml"));
   nh_private.param("driver_config_address", driver_config_address_,
-  		   std::string("/config/kinco/driver_config.yaml"));
+                   std::string("/config/kinco/driver_config.yaml"));
   nh_private.param(
       "base_file_address", base_file_address_,
       std::string("/home/renov_robot/renov_ws/src/renov_robot/sensor_startup"));
@@ -58,4 +59,10 @@ void DriverControllerROS::GetControlSignalCallback(
 
   ControlMotor(control_singal);
 }
+
+void DriverControllerROS::DriverStopCallback(
+    const std_msgs::Bool& stop_signal) {
+  DriverStop();
+}
+
 }  // namespace mobile_base

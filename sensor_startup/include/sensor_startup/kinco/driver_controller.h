@@ -23,8 +23,9 @@ class DriverController : public CanApplication {
   bool DriverInit();
   void StartPDO();
   bool DriverEnable();
-  bool DriverStart();
   void DriverPreset();
+  bool DriverStart();
+  void DriverStop();
 
   void ControlMotor(const std::vector<int>& control_signal);
   std::vector<int> ControlSignalTransform(const std::vector<int>& raw_signal);

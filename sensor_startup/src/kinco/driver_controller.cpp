@@ -15,7 +15,6 @@ void DriverController::ReadDriverFile(
     const std::string& relative_file_address) {
   std::string final_file_address = base_file_address_ + relative_file_address;
   if (if_debug_) {
-    std::cout << "relative is : " << relative_file_address << std::endl;
     std::cout << "Address of yaml file is : " << final_file_address
               << std::endl;
   }
@@ -50,14 +49,10 @@ void DriverController::ReadDriverFile(
 
 bool DriverController::DriverInit() {
   if (if_debug_) {
-    while (true) {
-      init_data_file_.open(base_file_address_ +
-                           "/debug_data/driver_init_data.txt", std::ios::app);
-      if (init_data_file_.is_open()) {
-        break;
-      } else {
-        std::cout << "open driver_init_data file failure" << std::endl;
-      }
+    init_data_file_.open(
+        base_file_address_ + "/debug_data/driver_init_data.txt", std::ios::app);
+    if (!init_data_file_.is_open()) {
+      std::cout << "open driver_init_data file failure" << std::endl;
     }
   }
 
@@ -261,7 +256,7 @@ bool DriverController::DriverStart() {
     }
   }
 
-  //delete[] walk_cmd_obj;
+  // delete[] walk_cmd_obj;
   delete[] steer_cmd_obj;
 
   return true;
@@ -272,7 +267,8 @@ void DriverController::DriverPreset() {
   for (size_t i = 0; i < steer_id_num_; i++) {
     preset_obj[i].ID += cob_id_[i + walk_id_num_];
     preset_obj[i].DataLen = 4;
-    Dec2HexVector(&preset_obj[i].Data[0], 1000 * 512 * frequency_multiplier_ * encoder_s_/1875, 4);
+    Dec2HexVector(&preset_obj[i].Data[0],
+                  1000 * 512 * frequency_multiplier_ * encoder_s_ / 1875, 4);
     Dec2HexVector(&preset_obj[i].Data[4], 0, 4);
   }
   for (size_t j = 0; j < steer_id_num_; j++) {
@@ -284,6 +280,18 @@ void DriverController::DriverPreset() {
   }
   SendCommand(preset_obj, steer_id_num_);
   delete[] preset_obj;
+}
+
+void DriverController::DriverStop() {
+  PVCI_CAN_OBJ stop_obj = GetVciObject(id_num_, RPDO1_ID);
+  for (size_t i = 0; i < id_num_; i++) {
+    stop_obj[i].ID += cob_id_[i];
+    stop_obj[i].Data[1] = 0x06;
+    stop_obj[i].Data[2] = 0x00;
+    stop_obj[i].DataLen = 3;
+  }
+  SendCommand(stop_obj, id_num_);
+  delete[] stop_obj;
 }
 
 void DriverController::ControlMotor(
@@ -585,15 +593,17 @@ void DriverController::GetHomePosition() {
 
       if (if_debug_) {
         std::ofstream home_file;
-        home_file.open(base_file_address_ + "/debug_data/home_position.txt", std::ios::app);
-	if (home_file.is_open()) std::cout << "open file for homing success" << std::endl;
-	home_file << "Home position : ";
-	for (size_t i = 0; i < steer_id_num_; i++) {
-	  home_file << std::dec << home_position_[i] << ", ";
-	}
-	home_file << std::endl;
-	
-	home_file.close();
+        home_file.open(base_file_address_ + "/debug_data/home_position.txt",
+                       std::ios::app);
+        if (home_file.is_open())
+          std::cout << "open file for homing success" << std::endl;
+        home_file << "Home position : ";
+        for (size_t i = 0; i < steer_id_num_; i++) {
+          home_file << std::dec << home_position_[i] << ", ";
+        }
+        home_file << std::endl;
+
+        home_file.close();
       }
       if_steer_home_ = true;
       break;
