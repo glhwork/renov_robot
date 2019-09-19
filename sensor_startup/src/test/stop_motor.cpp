@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "stop_motor");
   ros::NodeHandle nh;
 
-  ros::Publisher pub = nh.advertise<std_msgs::Bool>("stop", 100);
+  ros::Publisher pub = nh.advertise<std_msgs::Bool>("stop_driver", 100);
   ros::Rate r(10);
 
   int n = 0;

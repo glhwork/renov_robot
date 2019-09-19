@@ -1,6 +1,7 @@
 #include "sensor_startup/kinco/driver_controller.h"
 #include <unistd.h>
 #include <bitset>
+#include <ctime>
 
 namespace mobile_base {
 
@@ -293,6 +294,7 @@ void DriverController::DriverStop() {
     stop_obj[i].DataLen = 3;
   }
   SendCommand(stop_obj, id_num_);
+  std::cout << "stop the motor" << std::endl;
   delete[] stop_obj;
 }
 
@@ -419,7 +421,7 @@ std::vector<double> DriverController::ControlSignalTransform(
 
   // determine the steering command
   for (size_t i = walk_id_num_; i < id_num_; i++) {
-    double delta = raw_signal[i] * reduc_ratio_s_ * encoder_s_ / (2 * M_PI);
+    double delta = raw_signal[i] * reduc_ratio_s_ * frequency_multiplier_ * encoder_s_ / (2 * M_PI);
     double tmp = home_position_[i - walk_id_num_] +
                  delta * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
@@ -542,8 +544,16 @@ void DriverController::GetHomePosition(int* home_signal, const int& len) {
 }
 
 void DriverController::GetHomePosition() {
-  sleep(5);
+  sleep(10);
+  time_t flag_t, cur_t;
+  time(&flag_t);
   while (true) {
+    time(&cur_t);
+    if (cur_t - flag_t > 5.0) {
+      std::cout << "time is up for homing" << std::endl;
+      exit(0);
+    }
+
     FeedbackRequest();
     usleep(10000);
 
@@ -551,10 +561,10 @@ void DriverController::GetHomePosition() {
     PVCI_CAN_OBJ receive_obj = new VCI_CAN_OBJ[receive_obj_len];
     GetData(receive_obj, receive_obj_len);
 
-    std::vector<int> walk_fb_int;
-    std::vector<int> steer_fb_int;
-    walk_fb_int.resize(id_num_);
-    steer_fb_int.resize(id_num_);
+    std::vector<int> velo_fb_int;
+    std::vector<int> posi_fb_int;
+    velo_fb_int.resize(id_num_);
+    posi_fb_int.resize(id_num_);
 
     int state_word;
     bool if_home;
@@ -584,10 +594,11 @@ void DriverController::GetHomePosition() {
       /* this is a trick !!!!!!!!! */
       if_home = true;
 
-      if (abs(receive_obj[i].ID - TPDO2_ID) < (id_num_ + 1)) {
-        walk_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
+      if (abs(receive_obj[i].ID - TPDO2_ID) <= id_num_) {
+        std::cout << std::hex << receive_obj[i].ID << std::endl;
+        velo_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
             ByteHex2Int(&receive_obj[i].Data[0], 4);
-        steer_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
+        posi_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
             ByteHex2Int(&receive_obj[i].Data[4], 4);
         get_fb_flag[receive_obj[i].ID - TPDO2_ID - 1] = true;
       }
@@ -599,10 +610,34 @@ void DriverController::GetHomePosition() {
     }
     if (if_home && if_get_fb) {
       for (size_t i = 0; i < steer_id_num_; i++) {
-        home_position_[i] = steer_fb_int[i + walk_id_num_];
+        home_position_[i] = posi_fb_int[i + walk_id_num_];
       }
 
       if (if_debug_) {
+        /*******************************/
+	std::ofstream fb_file;
+	fb_file.open(base_file_address_ + "/debug_data/fb_test_of_homing.txt");
+	for (size_t j = 0; j < 30; j++) {
+	  fb_file << std::hex << "id : 0x" << (int)receive_obj[j].ID << " :  ";
+	  for (size_t k = 0; k < 8; k++) {
+	    fb_file << std::hex << "0x" << (int)receive_obj[j].Data[k] << "  ";
+	  }
+	  fb_file << std::endl;
+	}
+	fb_file << "************************" << std::endl;
+	fb_file << "velo fb is : ";
+	for (size_t j = 0; j < velo_fb_int.size(); j++) {
+	  fb_file << std::dec << velo_fb_int[j] << "  ";
+	}
+	fb_file << std::endl;
+        fb_file << "posi fb is : ";
+	for (size_t j = 0; j < velo_fb_int.size(); j++) {
+	  fb_file << std::dec << posi_fb_int[j] << "  ";
+	}
+	fb_file << std::endl;
+
+	fb_file.close();
+        /*******************************/
         std::ofstream home_file;
         home_file.open(base_file_address_ + "/debug_data/home_position.txt",
                        std::ios::app);
@@ -619,7 +654,6 @@ void DriverController::GetHomePosition() {
       if_steer_home_ = true;
       break;
     }
-    break;
   }
 }
 
@@ -631,23 +665,25 @@ void DriverController::GetFeedback(double* walk_fb, double* steer_fb) {
   PVCI_CAN_OBJ receive_obj = new VCI_CAN_OBJ[receive_obj_len];
   GetData(receive_obj, receive_obj_len);
 
-  int* walk_fb_int = new int[id_num_];
-  int* steer_fb_int = new int[id_num_];
+  int* velo_fb_int = new int[id_num_];
+  int* posi_fb_int = new int[id_num_];
   for (size_t i = 0; i < receive_obj_len; i++) {
-    if (abs(receive_obj[i].ID - TPDO2_ID) < (id_num_ + 1)) {
-      walk_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
+    if (abs(receive_obj[i].ID - TPDO2_ID) <= id_num_) {
+      velo_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
           ByteHex2Int(&receive_obj[i].Data[0], 4);
-      steer_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
+      posi_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
           ByteHex2Int(&receive_obj[i].Data[4], 4);
     }
   }
+  /* this calculation is incorrect
   for (size_t i = 0; i < id_num_; i++) {
-    walk_fb[i] = (double)walk_fb_int[i] / reduc_ratio_w_;
+    walk_fb[i] = (double)velo_fb_int[i] / reduc_ratio_w_;
     // steer_fb[i] =
   }
+  */
 
-  delete[] walk_fb_int;
-  delete[] steer_fb_int;
+  delete[] velo_fb_int;
+  delete[] posi_fb_int;
   delete[] receive_obj;
 }
 
@@ -657,6 +693,7 @@ void DriverController::Dec2HexVector(u_char* data_vec, const int& dec_value,
     data_vec[i] = (((int)dec_value >> (i * 8)) & 0xff);
   }
 }
+
 int DriverController::ByteHex2Int(uint8_t* data_vec, const int& data_vec_len) {
   int result = 0;
   int sign_judger = 0x80;
@@ -668,6 +705,7 @@ int DriverController::ByteHex2Int(uint8_t* data_vec, const int& data_vec_len) {
   if (sign_judger && result) {
     result = -1 * (~(result - 1));
   }
+  return result;
 }
 
 void DriverController::DataInitial(u_char* data, uint8_t* cmd,
