@@ -28,7 +28,7 @@ void DriverController::ReadDriverFile(
   frequency_multiplier_ = driver_config["frequency_multiplier"].as<int>();
   reduc_ratio_s_ = driver_config["reduc_ratio_s"].as<double>();
   reduc_ratio_w_ = driver_config["reduc_ratio_w"].as<double>();
-  trapezoid_velocity_ = driver_config["trapezoid_velocity"].as<int>();
+  trapezoid_velocity_ = driver_config["trapezoid_velocity"].as<double>();
 
   walk_id_num_ = driver_config["walk_id_num"].as<int>();
   steer_id_num_ = driver_config["steer_id_num"].as<int>();
@@ -311,13 +311,13 @@ void DriverController::ControlMotor(
 
     signal_data_file_ << "raw_control_signal : [";
     for (size_t i = 0; i < raw_control_signal.size(); i++) {
-      signal_data_file_ << std::dec << raw_control_signal[i] << "  ";
+      signal_data_file_ << std::dec << std::fixed << raw_control_signal[i] << "  ";
     }
     signal_data_file_ << "]" << std::endl;
 
     signal_data_file_ << "control_signal : [";
     for (size_t i = 0; i < control_signal.size(); i++) {
-      signal_data_file_ << std::dec << control_signal[i] << "  ";
+      signal_data_file_ << std::dec << std::fixed  << control_signal[i] << "  ";
     }
     signal_data_file_ << "]" << std::endl;
 
@@ -408,8 +408,11 @@ std::vector<double> DriverController::ControlSignalTransform(
 
   // determine the walking command
   for (size_t i = 0; i < walk_id_num_; i++) {
-    int tmp = raw_signal[i] * reduc_ratio_w_;
+    double tmp = raw_signal[i] * reduc_ratio_w_;
+    std::cout << raw_signal[i] << std::endl;
+    std::cout << tmp << std::endl;
     tmp = (tmp * 512 * frequency_multiplier_ * encoder_w_) / 1875;
+    std::cout << tmp << std::endl;
     tmp = tmp * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
   }
@@ -417,10 +420,13 @@ std::vector<double> DriverController::ControlSignalTransform(
   // determine the steering command
   for (size_t i = walk_id_num_; i < id_num_; i++) {
     double delta = raw_signal[i] * reduc_ratio_s_ * encoder_s_ / (2 * M_PI);
-    int tmp = home_position_[i - walk_id_num_] +
-              (int)delta * pow(-1, motor_sign_[i] + 1);
+    double tmp = home_position_[i - walk_id_num_] +
+                 delta * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
   }
+  //std::cout << std::dec << "fm : " << frequency_multiplier_ << "  encod_w : " << encoder_w_ << " reduc ratio: " << reduc_ratio_w_ << std::endl;
+  //std::cout << raw_signal[0] << std::endl;
+  //std::cout << signal[0] << std::endl;
   return signal;
 }
 
@@ -613,6 +619,7 @@ void DriverController::GetHomePosition() {
       if_steer_home_ = true;
       break;
     }
+    break;
   }
 }
 

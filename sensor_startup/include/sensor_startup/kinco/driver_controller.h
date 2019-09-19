@@ -59,7 +59,7 @@ class DriverController : public CanApplication {
   int frequency_multiplier_;
   double reduc_ratio_s_;
   double reduc_ratio_w_;
-  int trapezoid_velocity_;
+  double trapezoid_velocity_;
   uint* cob_id_;
   int* motor_sign_;
 

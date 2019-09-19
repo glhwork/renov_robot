@@ -23,6 +23,7 @@ class DriverControllerROS : public DriverController {
   std::string joint_state_pub_topic_;
 
   ros::Subscriber control_signal_sub_;
+  ros::Subscriber stop_signal_sub_;
   ros::Publisher joint_state_pub_;
 
 };  // class DriverControllerROS
