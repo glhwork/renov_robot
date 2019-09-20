@@ -543,14 +543,8 @@ void DriverController::EnableHomeProcess(uint* home_id,
   for (size_t i = 0; i < home_id_num; i++) {
     home_obj[i].ID += home_id[i];
     home_obj[i].Data[0] = can_cmd_.SET_HOMING_MODE[0];
-    DataInitial(&home_obj[i].Data[1], can_cmd_.ENABLE_VELOCITY_CMD, 2);
-    home_obj[i].DataLen = 3;
-  }
-  SendCommand(home_obj, home_id_num);
-  usleep(3000);
-
-  for (size_t i = 0; i < home_id_num; i++) {
     DataInitial(&home_obj[i].Data[1], can_cmd_.ENABLE_HOMING_CMD, 2);
+    home_obj[i].DataLen = 3;
   }
   SendCommand(home_obj, home_id_num);
 

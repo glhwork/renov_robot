@@ -91,3 +91,4 @@ request cmd -> id is : 0x80  len is : 0
 request cmd -> id is : 0x80  len is : 0
 request cmd -> id is : 0x80  len is : 0
 request cmd -> id is : 0x80  len is : 0
+request cmd -> id is : 0x80  len is : 0
