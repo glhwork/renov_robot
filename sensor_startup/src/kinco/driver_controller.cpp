@@ -59,13 +59,13 @@ bool DriverController::DriverInit() {
 
   StartPDO();
 
+  
+  GetHomePosition();
+
   if (!DriverStart()) {
     std::cout << "Error!! The drivers starts with failure" << std::endl;
     return false;
   }
-
-  GetHomePosition();
-
   SteerParamPreset();
 
   if (if_debug_) {
