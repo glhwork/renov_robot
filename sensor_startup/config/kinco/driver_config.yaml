@@ -13,7 +13,7 @@ reduc_ratio_w: 20.15  # reduction ratio of walking motor
 # velocity applied while the driver is in position mode, 
 # the value corresponds to the actual value of wheels
 # uint -> rad/s
-trapezoid_velocity: 0.175    
+trapezoid_velocity: 0.7    
 
 walk_id_num: 4
 steer_id_num: 4
@@ -29,14 +29,14 @@ steering_channel:
 cob_id: [1, 2, 3, 4, 5, 6, 7, 8]
 
 motor_sign: [ 
-   1,  # front walking left
-   0,  # front walking right
-   1,  # rear walking left
-   0,  # rear walking right
+   0,  # front walking left
+   1,  # front walking right
+   0,  # rear walking left
+   1,  # rear walking right
    0,  # front steering left
    0,  # front steering right
-   0,  # rear steering left
-   0   # rear steering right
+   1,  # rear steering left
+   1   # rear steering right
 ]
 
 

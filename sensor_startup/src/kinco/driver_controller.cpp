@@ -630,6 +630,7 @@ void DriverController::GetHomePosition() {
       for (size_t i = 0; i < steer_id_num_; i++) {
         home_position_[i] = posi_fb_int[i + walk_id_num_];
       }
+      SendPosition(&cob_id_[walk_id_num_], &home_position_[0], steer_id_num_);
 
       if (if_debug_) {
         /*******************************/
