@@ -124,6 +124,7 @@ void DriverController::StartPDO() {
   delete pdo_start_obj;
 }
 
+/*
 bool DriverController::DriverEnable() {
   PVCI_CAN_OBJ enable_obj = GetVciObject(id_num_, RPDO1_ID);
 
@@ -138,6 +139,7 @@ bool DriverController::DriverEnable() {
   SendCommand(enable_obj, id_num_);
   delete[] enable_obj;
 }
+*/
 
 bool DriverController::DriverStart() {
   PVCI_CAN_OBJ walk_cmd_obj = GetVciObject(walk_id_num_, RPDO1_ID);
@@ -246,7 +248,7 @@ bool DriverController::DriverStart() {
                       << "  0x" << (int)walk_cmd_obj[i].Data[1] << "  0x"
                       << (int)walk_cmd_obj[i].Data[2] << std::endl;
     }
-    std::cout << std::endl;
+    init_data_file_ << std::endl;
     for (size_t i = 0; i < steer_id_num_; i++) {
       init_data_file_ << "enable and set mode commands -> ";
       init_data_file_ << "data len : " << (int)steer_cmd_obj[i].DataLen << " ";
@@ -274,13 +276,7 @@ void DriverController::SteerParamPreset() {
     Dec2HexVector(&preset_obj[i].Data[0], (int)trap_velo, 4);
     Dec2HexVector(&preset_obj[i].Data[4], 0, 4);
   }
-  for (size_t j = 0; j < steer_id_num_; j++) {
-    std::cout << std::hex << "id is 0x" << (int)preset_obj[j].ID << " : ";
-    for (size_t i = 0; i < 8; i++) {
-      std::cout << std::hex << "0x" << (int)preset_obj[j].Data[i] << "  ";
-    }
-    std::cout << std::endl;
-  }
+
   SendCommand(preset_obj, steer_id_num_);
   delete[] preset_obj;
 }
@@ -313,13 +309,14 @@ void DriverController::ControlMotor(
 
     signal_data_file_ << "raw_control_signal : [";
     for (size_t i = 0; i < raw_control_signal.size(); i++) {
-      signal_data_file_ << std::dec << std::fixed << raw_control_signal[i] << "  ";
+      signal_data_file_ << std::dec << std::fixed << raw_control_signal[i]
+                        << "  ";
     }
     signal_data_file_ << "]" << std::endl;
 
     signal_data_file_ << "control_signal : [";
     for (size_t i = 0; i < control_signal.size(); i++) {
-      signal_data_file_ << std::dec << std::fixed  << control_signal[i] << "  ";
+      signal_data_file_ << std::dec << std::fixed << control_signal[i] << "  ";
     }
     signal_data_file_ << "]" << std::endl;
 
@@ -411,24 +408,22 @@ std::vector<double> DriverController::ControlSignalTransform(
   // determine the walking command
   for (size_t i = 0; i < walk_id_num_; i++) {
     double tmp = raw_signal[i] * reduc_ratio_w_;
-    std::cout << raw_signal[i] << std::endl;
-    std::cout << tmp << std::endl;
     tmp = (tmp * 512 * frequency_multiplier_ * encoder_w_) / 1875;
-    std::cout << tmp << std::endl;
     tmp = tmp * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
   }
 
   // determine the steering command
   for (size_t i = walk_id_num_; i < id_num_; i++) {
-    double delta = raw_signal[i] * reduc_ratio_s_ * frequency_multiplier_ * encoder_s_ / (2 * M_PI);
-    double tmp = home_position_[i - walk_id_num_] +
-                 delta * pow(-1, motor_sign_[i] + 1);
+    double delta = raw_signal[i] * reduc_ratio_s_ * frequency_multiplier_ *
+                   encoder_s_ / (2 * M_PI);
+    double tmp =
+        home_position_[i - walk_id_num_] + delta * pow(-1, motor_sign_[i] + 1);
     signal.push_back(tmp);
   }
-  //std::cout << std::dec << "fm : " << frequency_multiplier_ << "  encod_w : " << encoder_w_ << " reduc ratio: " << reduc_ratio_w_ << std::endl;
-  //std::cout << raw_signal[0] << std::endl;
-  //std::cout << signal[0] << std::endl;
+  // std::cout << std::dec << "fm : " << frequency_multiplier_ << "  encod_w : "
+  // << encoder_w_ << " reduc ratio: " << reduc_ratio_w_ << std::endl; std::cout
+  // << raw_signal[0] << std::endl; std::cout << signal[0] << std::endl;
   return signal;
 }
 
@@ -536,6 +531,26 @@ void DriverController::FeedbackRequest() {
   delete req_obj;
 }
 
+void DriverController::EnableHomeProcess(uint* home_id,
+                                         const int& home_id_num) {
+  PVCI_CAN_OBJ home_obj = GetVciObject(home_id_num, RPDO1_ID);
+  for (size_t i = 0; i < home_id_num; i++) {
+    home_obj[i].ID += home_id[i];
+    home_obj[i].Data[0] = can_cmd_.SET_HOMING_MODE[0];
+    DataInitial(&home_obj[i].Data[1], can_cmd_.ENABLE_VELOCITY_CMD, 2);
+    home_obj[i].DataLen = 3;
+  }
+  SendCommand(home_obj, home_id_num);
+  usleep(3000);
+
+  for (size_t i = 0; i < home_id_num; i++) {
+    DataInitial(&home_obj[i].Data[1], can_cmd_.ENABLE_HOMING_CMD, 2);
+  }
+  SendCommand(home_obj, home_id_num);
+
+  delete[] home_obj;
+}
+
 void DriverController::GetHomePosition(int* home_signal, const int& len) {
   for (size_t i = 0; i < len; i++) {
     home_position_[i] = home_signal[i];
@@ -544,6 +559,7 @@ void DriverController::GetHomePosition(int* home_signal, const int& len) {
 }
 
 void DriverController::GetHomePosition() {
+  EnableHomeProcess(&cob_id_[walk_id_num_], steer_id_num_);
   sleep(10);
   time_t flag_t, cur_t;
   time(&flag_t);
@@ -575,6 +591,8 @@ void DriverController::GetHomePosition() {
     }
     for (size_t i = 0; i < receive_obj_len; i++) {
       bool if_get_state_word = false;
+
+      /* the criterion of judgement here is incorrect */
       for (size_t j = walk_id_num_; j < id_num_; j++) {
         if (cob_id_[j] + TPDO1_ID == receive_obj[i].ID) {
           if_get_state_word = true;
@@ -590,12 +608,12 @@ void DriverController::GetHomePosition() {
         }
         continue;
       }
+      /*          */
 
       /* this is a trick !!!!!!!!! */
       if_home = true;
 
       if (abs(receive_obj[i].ID - TPDO2_ID) <= id_num_) {
-        std::cout << std::hex << receive_obj[i].ID << std::endl;
         velo_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
             ByteHex2Int(&receive_obj[i].Data[0], 4);
         posi_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
@@ -615,41 +633,42 @@ void DriverController::GetHomePosition() {
 
       if (if_debug_) {
         /*******************************/
-	std::ofstream fb_file;
-	fb_file.open(base_file_address_ + "/debug_data/fb_test_of_homing.txt");
-	for (size_t j = 0; j < 30; j++) {
-	  fb_file << std::hex << "id : 0x" << (int)receive_obj[j].ID << " :  ";
-	  for (size_t k = 0; k < 8; k++) {
-	    fb_file << std::hex << "0x" << (int)receive_obj[j].Data[k] << "  ";
-	  }
-	  fb_file << std::endl;
-	}
-	fb_file << "************************" << std::endl;
-	fb_file << "velo fb is : ";
-	for (size_t j = 0; j < velo_fb_int.size(); j++) {
-	  fb_file << std::dec << velo_fb_int[j] << "  ";
-	}
-	fb_file << std::endl;
+        std::ofstream fb_file;
+        fb_file.open(base_file_address_ + "/debug_data/fb_test_of_homing.txt");
+        for (size_t j = 0; j < 30; j++) {
+          fb_file << std::hex << "id : 0x" << (int)receive_obj[j].ID << " :  ";
+          for (size_t k = 0; k < 8; k++) {
+            fb_file << std::hex << "0x" << (int)receive_obj[j].Data[k] << "  ";
+          }
+          fb_file << std::endl;
+        }
+        fb_file << "************************" << std::endl;
+        fb_file << "velo fb is : ";
+        for (size_t j = 0; j < velo_fb_int.size(); j++) {
+          fb_file << std::dec << velo_fb_int[j] << "  ";
+        }
+        fb_file << std::endl;
         fb_file << "posi fb is : ";
-	for (size_t j = 0; j < velo_fb_int.size(); j++) {
-	  fb_file << std::dec << posi_fb_int[j] << "  ";
-	}
-	fb_file << std::endl;
+        for (size_t j = 0; j < velo_fb_int.size(); j++) {
+          fb_file << std::dec << posi_fb_int[j] << "  ";
+        }
+        fb_file << std::endl;
 
-	fb_file.close();
+        fb_file.close();
         /*******************************/
         std::ofstream home_file;
         home_file.open(base_file_address_ + "/debug_data/home_position.txt",
                        std::ios::app);
-        if (home_file.is_open())
+        if (home_file.is_open()) {
           std::cout << "open file for homing success" << std::endl;
-        home_file << "Home position : ";
-        for (size_t i = 0; i < steer_id_num_; i++) {
-          home_file << std::dec << home_position_[i] << ", ";
-        }
-        home_file << std::endl;
+          home_file << "Home position : ";
+          for (size_t i = 0; i < steer_id_num_; i++) {
+            home_file << std::dec << home_position_[i] << ", ";
+          }
+          home_file << std::endl;
 
-        home_file.close();
+          home_file.close();
+        }
       }
       if_steer_home_ = true;
       break;

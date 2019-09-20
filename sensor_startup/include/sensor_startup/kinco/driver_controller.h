@@ -22,7 +22,7 @@ class DriverController : public CanApplication {
 
   bool DriverInit();
   void StartPDO();
-  bool DriverEnable();
+  // bool DriverEnable();
   void SteerParamPreset();
   bool DriverStart();
   void DriverStop();
@@ -35,6 +35,7 @@ class DriverController : public CanApplication {
   void FeedbackRequest();
   void GetHomePosition(int* home_signal, const int& len);
   void GetHomePosition();
+  void EnableHomeProcess(uint* home_id, const int& home_id_num);
   void GetFeedback(double* walk_fb, double* steer_fb);
   void DriverDiagnostic();
 

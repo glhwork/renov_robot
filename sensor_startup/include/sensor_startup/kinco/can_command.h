@@ -19,6 +19,7 @@
 #define CURRENT_MODE 2
 
 #define ENABLE_CMD 0x0f
+#define ENABLE_HOMING 0x1f
 #define DISENABLE_CMD 0x06
 
 #define IMMEDIATE_VELOCITY 0xfd
@@ -29,16 +30,22 @@ namespace mobile_base {
 
 struct CanCommand {
   _u8 PDO_START_WORK[2] = {0x01, 0x00};
+
   _u8 SET_VELOCITY_MODE[1] = {0xfd};
-  _u8 SET_POSITION_MODE[1] = {1}; 
-  _u8 SET_CURRENT_MODE[1] = {1}; 
-  _u8 ENABLE_MOTOR[1] = {1}; 
+  _u8 SET_POSITION_MODE[1] = {0x01};
+  _u8 SET_CURRENT_MODE[1] = {1};
+  _u8 SET_HOMING_MODE[1] = {0x06};
 
-  _u8 VELOCITY_COMMAND[1] = {1}; 
-  _u8 POSITION_COMMAND[1] = {1}; 
-  _u8 CURRENT_COMMAND[1] = {1}; 
+  _u8 ENABLE_VELOCITY_CMD[2] = {0x0f, 0x00};
+  _u8 ENABLE_POSITION_CMD[2] = {0x3f, 0x10};
+  _u8 ENABLE_HOMING_CMD[2] = {0x1f, 0x00};
 
-  _u8 SET_TRAPEZOID_VELOCITY[8] = {0x81, 0x60, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00};
+  _u8 VELOCITY_COMMAND[1] = {1};
+  _u8 POSITION_COMMAND[1] = {1};
+  _u8 CURRENT_COMMAND[1] = {1};
+
+  _u8 SET_TRAPEZOID_VELOCITY[8] = {0x81, 0x60, 0x20, 0x00,
+                                   0x00, 0x00, 0x00, 0x00};
 };  // struct CanCommand
 
 }  // namespace mobile_base
