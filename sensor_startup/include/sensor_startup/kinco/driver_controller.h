@@ -44,6 +44,8 @@ class DriverController : public CanApplication {
   int ByteHex2Int(uint8_t* data_vec, const int& data_vec_len);
   void DebugData(const bool& if_debug_flag);
   void GetBaseAddress(const std::string& base_file_address);
+  bool MultiFlagJudgement(bool* multi_flag, const int& len);
+  bool MultiFlagJudgement(const std::vector<bool>& multi_flag);
 
  protected:
   /* PARAMETERS READ FROM YAML FILE */

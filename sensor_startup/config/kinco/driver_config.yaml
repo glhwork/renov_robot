@@ -35,9 +35,11 @@ motor_sign: [
    1,  # rear walking right
    0,  # front steering left
    0,  # front steering right
-   1,  # rear steering left
-   1   # rear steering right
+   0,  # rear steering left
+   0   # rear steering right
 ]
+
+home_position: [15000, 14000, 12000, 14000]
 
 
 front_rear_track: 0.5  # length of mobile_base

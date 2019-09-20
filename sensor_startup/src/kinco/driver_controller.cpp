@@ -36,6 +36,9 @@ void DriverController::ReadDriverFile(
   id_num_ = walk_id_num_ + steer_id_num_;
 
   home_position_ = new int[steer_id_num_];
+  for (size_t i = 0; i < steer_id_num_; i++) {
+    home_position_[i] = 2 * driver_config["home_position"][i].as<int>();
+  }
 
   cob_id_ = new uint[id_num_];
   for (size_t i = 0; i < id_num_; i++) {
@@ -414,13 +417,16 @@ std::vector<double> DriverController::ControlSignalTransform(
   }
 
   // determine the steering command
+  std::cout << "sign of steering is : ";
   for (size_t i = walk_id_num_; i < id_num_; i++) {
     double delta = raw_signal[i] * reduc_ratio_s_ * frequency_multiplier_ *
                    encoder_s_ / (2 * M_PI);
     double tmp =
         home_position_[i - walk_id_num_] + delta * pow(-1, motor_sign_[i] + 1);
+    std::cout << pow(-1, motor_sign_[i] + 1) << "  ";
     signal.push_back(tmp);
   }
+  std::cout << std::endl;
   // std::cout << std::dec << "fm : " << frequency_multiplier_ << "  encod_w : "
   // << encoder_w_ << " reduc ratio: " << reduc_ratio_w_ << std::endl; std::cout
   // << raw_signal[0] << std::endl; std::cout << signal[0] << std::endl;
@@ -583,12 +589,17 @@ void DriverController::GetHomePosition() {
     posi_fb_int.resize(id_num_);
 
     int state_word;
-    bool if_home;
     bool if_get_fb = true;
     bool get_fb_flag[id_num_];
     for (size_t i = 0; i < id_num_; i++) {
       get_fb_flag[i] = false;
     }
+
+    bool* if_home = new bool[steer_id_num_];
+    for (size_t i = 0; i < steer_id_num_; i++) {
+      if_home[i] = false;
+    }  // initial the value of if_home flag
+
     for (size_t i = 0; i < receive_obj_len; i++) {
       bool if_get_state_word = false;
 
@@ -602,16 +613,16 @@ void DriverController::GetHomePosition() {
       if (if_get_state_word) {
         state_word = ByteHex2Int(&receive_obj[i].Data[1], 2);
         if (((state_word >> 15) & 0x01) == 1) {
-          if_home = true;
+          if_home[receive_obj[i].ID - TPDO1_ID - walk_id_num_ - 1] = true;
         } else {
-          if_home = false;
+          if_home[receive_obj[i].ID - TPDO1_ID - walk_id_num_ - 1] = false;
         }
         continue;
       }
       /*          */
 
       /* this is a trick !!!!!!!!! */
-      if_home = true;
+      //if_home = true;
 
       if (abs(receive_obj[i].ID - TPDO2_ID) <= id_num_) {
         velo_fb_int[receive_obj[i].ID - TPDO2_ID - 1] =
@@ -626,10 +637,8 @@ void DriverController::GetHomePosition() {
     for (size_t i = 0; i < id_num_; i++) {
       if_get_fb = if_get_fb && get_fb_flag[i];
     }
-    if (if_home && if_get_fb) {
-      for (size_t i = 0; i < steer_id_num_; i++) {
-        home_position_[i] = posi_fb_int[i + walk_id_num_];
-      }
+    if (MultiFlagJudgement(if_home, steer_id_num_) && if_get_fb) {
+
       SendPosition(&cob_id_[walk_id_num_], &home_position_[0], steer_id_num_);
 
       if (if_debug_) {
@@ -672,9 +681,11 @@ void DriverController::GetHomePosition() {
         }
       }
       if_steer_home_ = true;
+      delete[] if_home;
       break;
-    }
-  }
+    }  // end of 'if' to judge whether we get home position
+    delete[] if_home;
+  }  // end of while loop to continuously read position value
 }
 
 void DriverController::GetFeedback(double* walk_fb, double* steer_fb) {
@@ -741,6 +752,26 @@ void DriverController::DebugData(const bool& if_debug_flag) {
 
 void DriverController::GetBaseAddress(const std::string& base_file_address) {
   base_file_address_ = base_file_address;
+}
+
+bool DriverController::MultiFlagJudgement(bool* multi_flag, const int& len) {
+
+  bool final_flag = true;
+  for (size_t i = 0; i < len; i++) {
+    final_flag = final_flag && multi_flag[i];
+  }
+
+  return final_flag;
+}
+
+bool DriverController::MultiFlagJudgement(const std::vector<bool>& multi_flag) {
+
+  bool final_flag = true;
+  for (size_t i = 0; i < multi_flag.size(); i++) {
+    final_flag = final_flag && multi_flag[i];
+  }
+
+  return final_flag;
 }
 
 }  // namespace mobile_base
