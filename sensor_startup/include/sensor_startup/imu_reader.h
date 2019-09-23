@@ -9,10 +9,9 @@
 #include "sensor_msgs/Imu.h"
 #include "serial/serial.h"
 
-#define GRAVITY 9.80665 
+#define GRAVITY 9.80665
 
 // considering neccessity of null drift compensation 
-
 
 namespace mobile_base {
 
@@ -52,6 +51,7 @@ class ImuReader {
   std::string imu_pub_topic;
   bool use_request;
   int output_freq;
+  bool use_debug;
 
   ImuCommand cmd;
   serial::Serial imu_ser;
