@@ -9,7 +9,10 @@
 #include "sensor_msgs/Imu.h"
 #include "serial/serial.h"
 
+#define GRAVITY 9.80665 
+
 // considering neccessity of null drift compensation 
+
 
 namespace mobile_base {
 

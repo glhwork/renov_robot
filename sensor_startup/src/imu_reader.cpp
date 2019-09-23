@@ -172,9 +172,9 @@ void ImuReader::DataParser(const std::vector<uint8_t>& data) {
     imu_msg.angular_velocity_covariance = {1e-5, 0, 0, 0, 1e-5, 0, 0, 0, 1e-5};
 
     // get linear acceleration (value * g)
-    imu_msg.linear_acceleration.x = vec(3);
-    imu_msg.linear_acceleration.y = vec(4);
-    imu_msg.linear_acceleration.z = vec(5);
+    imu_msg.linear_acceleration.x = vec(3) * GRAVITY;
+    imu_msg.linear_acceleration.y = vec(4) * GRAVITY;
+    imu_msg.linear_acceleration.z = vec(5) * GRAVITY;
     imu_msg.linear_acceleration_covariance = {1e-5, 0, 0, 0, 1e-5, 0, 0, 0, 1e-5};
 
     // printf("angular -> roll: %.2f, pitch: %.2f, yaw: %.2f \n", vec(0),
