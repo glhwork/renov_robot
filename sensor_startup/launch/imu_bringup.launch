@@ -1,13 +1,15 @@
 <launch>
-  <param name="imu_publish_rate" value="100"/>
-  <node pkg="sensor_startup" type="imu_core" name="imu" output="screen">
+  <arg name="freq" default="5" />
+  <param name="imu_publish_rate" value="15"/>
+  <node pkg="sensor_startup" type="imu_reader_node" name="imu_reader" output="screen">
     <param name="port_id" value="/dev/ttyUSB0" />
     <param name="baud_rate" value="115200" />
     <param name="imu_frame_id" value="base_imu"/>
-    <param name="imu_pub_topic" value="data_raw"/>
-    <param name="use_request" value="true"/>
+    <param name="imu_pub_topic" value="imu_data"/>
+    <param name="use_request" value="false"/>
     <!-- output_freq should only be : 5 15 25 35 50 100 -->
-    <param name="output_freq" value="50"/>
+    <param name="output_freq" value="15"/>
+    <param name="use_debug" value="false" />
   </node>
 
 <!--  <node pkg="imu_complementary_filter" type="complementary_filter_node" name="complementary_filter_gain_node" output="screen">
