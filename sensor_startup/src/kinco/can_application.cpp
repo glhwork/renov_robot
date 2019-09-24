@@ -39,6 +39,10 @@ void CanApplication::CanActivate(const std::string& file_address) {
   CanDiagnostic("start can", start_state);
 }
 
+void CanApplication::CanClose() {
+  VCI_CloseDevice(device_type_, device_index_);
+}
+
 void CanApplication::CanDiagnostic(const std::string& description,
                                    const int& state) {
   switch (state) {

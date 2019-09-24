@@ -284,19 +284,38 @@ void DriverController::SteerParamPreset() {
   delete[] preset_obj;
 }
 
-void DriverController::DriverStop() {
-  PVCI_CAN_OBJ stop_obj = GetVciObject(id_num_, RPDO1_ID);
+void DriverController::DriverDisenable() {
+  PVCI_CAN_OBJ disenable_obj = GetVciObject(id_num_, RPDO1_ID);
   for (size_t i = 0; i < id_num_; i++) {
-    stop_obj[i].ID += cob_id_[i];
-    stop_obj[i].Data[1] = 0x06;
-    stop_obj[i].Data[2] = 0x00;
-    stop_obj[i].DataLen = 3;
+    disenable_obj[i].ID += cob_id_[i];
+    disenable_obj[i].Data[1] = 0x06;
+    disenable_obj[i].Data[2] = 0x00;
+    disenable_obj[i].DataLen = 3;
   }
-  SendCommand(stop_obj, id_num_);
+  SendCommand(disenable_obj, id_num_);
   std::cout << "stop the motor" << std::endl;
-  delete[] stop_obj;
+  delete[] disenable_obj;
 }
 
+void DriverController::DriverStop() {
+
+  int* target_velocity = new int[walk_id_num_];
+  for (size_t i = 0; i < walk_id_num_; i++) {
+    target_velocity[i] = 0;
+  }
+  SendVelocity(cob_id_, target_velocity, walk_id_num_);
+  delete[] target_velocity;
+
+  int* target_position = new int[steer_id_num_];
+  for (size_t i = 0; i < steer_id_num_; i++) {
+    target_position[i] = home_position_[i];
+  }
+  SendPosition(&cob_id_[walk_id_num_], target_position, steer_id_num_);
+  delete[] target_position;
+
+  sleep(1);
+
+}
 void DriverController::ControlMotor(
     const std::vector<double>& raw_control_signal) {
   if (raw_control_signal.size() != id_num_) {
@@ -565,8 +584,10 @@ void DriverController::GetHomePosition() {
   time(&flag_t);
   while (true) {
     time(&cur_t);
-    if (cur_t - flag_t > 5.0) {
+    if (cur_t - flag_t > 15.0) {
       std::cout << "time is up for homing" << std::endl;
+      DriverDisenable();
+      CanClose();
       exit(0);
     }
 

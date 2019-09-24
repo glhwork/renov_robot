@@ -66,6 +66,7 @@ void DriverControllerROS::GetControlSignalCallback(
 void DriverControllerROS::DriverStopCallback(
     const std_msgs::Bool& stop_signal) {
   DriverStop();
+  DriverDisenable();
 }
 
 }  // namespace mobile_base

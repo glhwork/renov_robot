@@ -26,6 +26,7 @@ class DriverController : public CanApplication {
   void SteerParamPreset();
   bool DriverStart();
   void DriverStop();
+  void DriverDisenable();
 
   void ControlMotor(const std::vector<double>& control_signal);
   std::vector<double> ControlSignalTransform(const std::vector<double>& raw_signal);
