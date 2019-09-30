@@ -280,6 +280,9 @@ void DriverController::SteerParamPreset() {
     Dec2HexVector(&preset_obj[i].Data[4], 0, 4);
   }
 
+  std::cout << trapezoid_velocity_ << std::endl;
+  std::cout << trap_velo << std::endl;
+
   SendCommand(preset_obj, steer_id_num_);
   delete[] preset_obj;
 }
@@ -654,6 +657,11 @@ void DriverController::GetHomePosition() {
     }
     if (MultiFlagJudgement(if_home, steer_id_num_) && if_get_fb) {
 
+      std::cout << "home position send to driver  ";
+      for (size_t i = 0; i < steer_id_num_; i++) {
+        std::cout << home_position_[i] << "  ";
+      }
+      std::cout << std::endl;
       SendPosition(&cob_id_[walk_id_num_], &home_position_[0], steer_id_num_);
 
       if (if_debug_) {

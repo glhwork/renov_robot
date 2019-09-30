@@ -27,9 +27,7 @@ Teleop::Teleop(ros::NodeHandle nh) {
   // ReadFile(
   //     "/home/renov_robot/catkin_ws/src/renov_robot/sensor_startup/config/"
   //     "motor_config.yaml");
-  ReadFile(
-      "/home/george/slam_ws/src/renov_robot/sensor_startup/config/"
-      "motor_config.yaml");
+  ReadFile("/data/ros/yue_wk_2019/src/renov_robot/sensor_startup/config/motor_config.yaml");
   control_signal_pub =
       nh.advertise<sensor_msgs::JointState>("cmd_base_joint", 100);
 

@@ -4,8 +4,8 @@
   <node pkg="sensor_startup" type="imu_reader_node" name="imu_reader" output="screen">
     <param name="port_id" value="/dev/ttyUSB0" />
     <param name="baud_rate" value="115200" />
-    <param name="imu_frame_id" value="base_imu"/>
-    <param name="imu_pub_topic" value="imu_test"/>
+    <param name="imu_frame_id" value="imu_link"/>
+    <param name="imu_pub_topic" value="imu_data"/>
     <param name="use_request" value="false"/>
     <!-- output_freq should only be : 5 15 25 35 50 100 -->
     <param name="output_freq" value="15"/>
