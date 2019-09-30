@@ -1,0 +1,8 @@
+<launch>
+  <node pkg="mobile_base_navigation" type="mobile_base_planner" name="mobile_base_planner">
+    <rosparam file="$(find mobile_base_navigation)/config/costmap_common_param.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find mobile_base_navigation)/config/costmap_common_param.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find mobile_base_navigation)/config/global_costmap_param.yaml" command="load" />
+    <rosparam file="$(find mobile_base_navigation)/config/local_costmap_param.yaml" command="load" />
+  </node>
+</launch>
